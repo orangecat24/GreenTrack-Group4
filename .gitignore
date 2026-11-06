@@ -1,0 +1,36 @@
+# Local Python environments, generated files, and test/tool caches.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Frontend dependencies and generated build outputs.
+node_modules/
+dist/
+build/
+coverage/
+*.log
+
+# Keep safe examples, never real local configuration or credentials.
+.env
+.env.*
+!.env.example
+**/.aws/
+**/credentials
+**/credentials.*
+**/secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
