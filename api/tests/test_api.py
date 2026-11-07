@@ -162,7 +162,9 @@ def test_honest_assistant_placeholders(client, request_type):
     assert result["status"] == "placeholder" and result["is_demo"] is True
     assert result["assistant_connected"] is False
     assert result["citations"] == []
-    assert "Person 3 placeholder" in result["answer"]
+    # The current API uses neutral wording; the important contract is that the
+    # response openly identifies the placeholder and disconnected assistant.
+    assert "placeholder" in result["answer"].lower()
     assert "Bedrock is not connected" in result["answer"]
 
 

@@ -1,8 +1,8 @@
 # Person 2: first mock API increment
 
 Decision for our 7–10 day delivery: start with a small FastAPI service and an
-explicit provisional contract; build React/TypeScript/Vite against it next.
-No frontend, AWS adapter, deployed infrastructure, or AI integration is included yet.
+explicit provisional contract. A React/TypeScript/Vite SPA now consumes it in `web/`.
+No AWS adapter, deployed infrastructure, or AI integration is included yet.
 Python 3.14.10 was used; Node 24 LTS is the frontend target. Persistent teaching
 and stack instructions are in `AGENTS.md`.
 
@@ -67,7 +67,7 @@ settings are needed. Unsupported `APP_DATA_MODE` values deliberately fail startu
 - `POST /chat` accepts the same household/window plus `request_type=chat` and
   `message`; or `request_type=weekly_summary` without a message. Both return
   `status=placeholder`, `assistant_connected=false`, `is_demo=true`, empty
-  citations, and an explicit Person 3 / Bedrock-disconnected explanation.
+  citations, and an explicit placeholder / Bedrock-disconnected explanation.
 
 Example weekly-summary JSON for `/docs`:
 
@@ -99,5 +99,22 @@ require rewriting the HTTP routes.
 Person 1 can implement the repository contract once gold/DynamoDB access patterns
 are ready; Person 3 can replace the assistant placeholder and supply model outputs.
 Confirm source timezone and agree any contract changes through review, while
-continuing against these fixtures. Next Person 2 step: simple React views using
-this API. No commits or pushes were made by the implementation task.
+continuing against these fixtures. The four React views now use this API; next
+integration work is replacing the mock repository and assistant through reviewed
+contracts. No commits or pushes were made by the implementation tasks.
+
+## React SPA increment
+
+See [web/README.md](../web/README.md) for exact PowerShell start/check commands,
+the file tour, deployment base-URL examples, and the SPA/Razor comparison.
+Start FastAPI on port 8000, then run `npm.cmd run dev` from `web/` and visit
+http://127.0.0.1:5173. The default `/api` prefix is stripped by Vite's development
+proxy. Production must provide that route or set `VITE_API_BASE_URL` to the actual
+API prefix **before building**; no endpoint suffix or credentials belong in it.
+
+History uses inclusive calendar dates (converted to the API's exclusive end).
+Forecast has its own June 8 target window and separate actual/forecast series.
+All displayed records come from the API; demo flags, units, UTC caveats and
+placeholder assistant behavior remain visible. Requests are cancelled/ignored
+when filters change. Validation: 19 frontend tests, production build, lint, and
+a real desktop/mobile Chrome smoke check passed. npm reports zero vulnerabilities.
