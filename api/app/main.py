@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Query, Request
+from fastapi.responses import RedirectResponse
 
 from .models import (
     AnomalyPoint, ChatRequest, ChatResponse, ConsumptionQuery, ConsumptionResponse,
@@ -35,6 +36,15 @@ def create_app() -> FastAPI:
     def get_service(request: Request) -> EnergyService:
         """Reuse the service created at startup instead of rebuilding every request."""
         return request.app.state.energy_service
+
+    @app.get("/", include_in_schema=False)
+    def api_home(request: Request) -> RedirectResponse:
+        """Send browser visitors to the interactive API documentation."""
+        # Uvicorn's base URL points to '/', which previously had no route and
+        # returned 404. This redirect helps humans find /docs; the frontend
+        # continues requesting the JSON endpoints such as /consumption directly.
+        # Resolve the named route so a future mounted URL prefix is respected.
+        return RedirectResponse(request.url_for("swagger_ui_html"), status_code=307)
 
     @app.get("/health", response_model=HealthResponse)
     def health() -> HealthResponse:

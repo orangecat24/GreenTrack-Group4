@@ -22,6 +22,9 @@ $env:APP_DATA_MODE = 'mock'
 ```
 
 Open http://127.0.0.1:8000/docs to try the typed requests interactively.
+The bare http://127.0.0.1:8000/ now redirects there. Previously `/` had no route
+and returned `{"detail":"Not Found"}` even while the API was healthy.
+Use http://127.0.0.1:8000/health for the JSON health check, and port 5173 for the React app.
 In a second terminal, from the repository root:
 
 ```powershell

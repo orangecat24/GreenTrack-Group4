@@ -19,6 +19,19 @@ def test_health_and_openapi(client):
     assert set(schema["paths"]) == {"/health", "/consumption", "/anomalies", "/forecast", "/chat"}
 
 
+def test_api_home_redirects_to_docs(client):
+    """The bare API URL should guide browser visitors to the interactive docs."""
+    response = client.get("/", follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["location"] == "http://testserver/docs"
+    docs = client.get("/")
+    assert docs.status_code == 200
+    assert "text/html" in docs.headers["content-type"]
+    assert "swagger-ui" in docs.text
+    # Only the intended home URL redirects; misspelled API routes stay 404s.
+    assert client.get("/not-a-real-route").status_code == 404
+
+
 def test_default_mode_needs_no_configuration(monkeypatch):
     """Removing APP_DATA_MODE must still start a working offline application."""
     monkeypatch.delenv("APP_DATA_MODE")
