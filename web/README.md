@@ -81,7 +81,8 @@ This follows [Playwright's browser installation guidance](https://playwright.dev
 
 `.github/workflows/demo-checks.yml` performs the API tests, frontend tests, build,
 lint, and smoke flow on a pull request or manual workflow run, using Python 3.14
-and Node 24. It does not deploy anything. CI executes the same
+and Node 24. See [the PR check guide](../docs/pr-checks.md) for local commands,
+failed-step logs, cancellation, and conditional Terraform checks. It does not deploy anything. CI executes the same
 [Playwright webServer setup](https://playwright.dev/docs/test-webserver) as local
 testing, with the executable path selected for Windows or Linux by
 `scripts/start-mock-api.mjs`.

@@ -255,3 +255,23 @@ pagination, half-open ranges, empty results, safe errors, default no-client mode
 and idempotent batch/retry behavior. The CLI dry run previewed 202 rows. Existing
 frontend tests (20), build, and lint passed. SDK network retry internals, live AWS
 permissions/resources, and remote CI are unverified; no AWS or Docker was used.
+
+## Pull-request workflow
+
+The existing `demo-checks.yml` now cancels outdated runs per PR and retains browser
+failure reports. It keeps Python 3.14, Node 24, pinned requirements, `npm ci`,
+tests, lint, build, and a credential-free mock browser flow in one workflow.
+There is also a conditional Terraform job: no Terraform exists today, so it
+explicitly skips. When added, register deployable roots in `.github/terraform-roots.txt`,
+pin `.terraform-version`, and commit provider locks. It then checks fmt and runs
+backend-disabled init plus validate, never an AWS plan or apply.
+See [pr-checks.md](pr-checks.md) for matching local commands and finding failed
+GitHub step logs/artifacts. GitHub execution and real Terraform validation have
+not been run locally.
+
+Local PR-check verification passed: pinned Python dependencies and `pip check`,
+clean cached `npm ci`, 94 pytest tests, 20 frontend tests, lint, production build,
+and one Playwright Chromium flow. The Terraform helper reports the expected skip;
+its registration/lock/path discovery policies were checked using temporary local
+fixtures without invoking Terraform. No Terraform configuration or CLI exists
+here, so fmt/init/validate remain unrun. The upstream HTTPX warning remains.
