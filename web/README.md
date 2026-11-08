@@ -34,6 +34,62 @@ npm.cmd run build
 npm.cmd run lint
 ```
 
+## Real browser smoke flow (local and CI)
+
+Prerequisites: Node 24, the repository-root Python 3.14 `.venv`, and dependencies
+installed from `api/requirements-dev.txt` and `web/package-lock.json`.
+On Windows PowerShell, from the repository root:
+
+```powershell
+# Only create .venv if it is absent; keep your existing local environment.
+# py -3.14 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r api\requirements-dev.txt
+cd web
+npm.cmd ci
+npx.cmd playwright install chromium
+npm.cmd run test:e2e
+```
+
+The browser install downloads Playwright's matching Chromium to its local cache;
+repeat it after changing the Playwright version. It is separate from `npm ci`.
+No browser extension, personal Chrome profile, AWS credentials, or prestarted
+servers are needed. The test is headless by default; use
+`npm.cmd run test:e2e -- --headed` to watch it.
+
+`playwright.config.ts` starts fresh FastAPI and Vite processes on **18000** and
+**15173**, waits for readiness through `/api/health`, and tears down its processes
+after the test. The API launcher explicitly selects mock mode and removes inherited
+AWS settings. The web server sets `VITE_API_BASE_URL=/api` and the server-only
+`API_PROXY_TARGET=http://127.0.0.1:18000`, overriding deployment settings for this
+test. Normal development remains on 8000/5173 and is left alone. If the test ports
+are already occupied, stop the previous test process or let it finish; the smoke
+flow deliberately refuses to reuse an unidentified server.
+
+The single flow visits Consumption, Anomalies, Forecast, and Assistant; narrows
+the history to June 1 and verifies its 13.46 kWh total; restores the week; checks
+actual/illustrative forecast labels; sends a chat question; and requests a weekly
+summary while checking that an unsent draft survives. It uses real API responses
+and blocks unexpected external browser requests. Vitest only collects `src/`
+unit/component tests, keeping the browser flow separate.
+
+On Linux/CI, use `python3.14 -m venv .venv`, then
+`.venv/bin/python -m pip install -r api/requirements-dev.txt` from the root.
+From `web/`, run `npm ci`, `npx playwright install --with-deps chromium`, and
+`npm run test:e2e`. The `--with-deps` option installs Linux browser libraries too;
+it may need administrator privileges on a local Linux machine.
+This follows [Playwright's browser installation guidance](https://playwright.dev/docs/browsers).
+
+`.github/workflows/demo-checks.yml` performs the API tests, frontend tests, build,
+lint, and smoke flow on a pull request or manual workflow run, using Python 3.14
+and Node 24. It does not deploy anything. CI executes the same
+[Playwright webServer setup](https://playwright.dev/docs/test-webserver) as local
+testing, with the executable path selected for Windows or Linux by
+`scripts/start-mock-api.mjs`.
+
+Failures leave an ignored HTML report in `web/playwright-report/` and a screenshot
+and trace in `web/test-results/`. Run `npx.cmd playwright show-report` to view the
+report. Browser artifacts and `node_modules` must not be committed.
+
 The build produces ignored `web/dist/`. `npm.cmd run preview` serves those static
 files for inspection; it does **not** provide the development API proxy.
 
@@ -98,11 +154,26 @@ failed subsequent requests leave earlier messages visible.
 
 ## Validation and dependency notes
 
-Validated with Node 24.22.2 / npm 11.19.1: **19 frontend tests passed**, production
-TypeScript/Vite build passed, and lint passed with zero warnings. A real Chrome
-smoke check verified the Vite proxy, 111.80 kWh total, three anomalies, 168 actual
-and 24 forecast intervals, weekly-summary response, and mobile layout without
-browser exceptions. Temporary QA-owned servers/browser were stopped.
+Latest review, November 8, 2026, with Node 24.22.2 / npm 11.19.1 and Python
+3.14.10: **57 API tests, 20 frontend tests, and one Playwright Chromium flow
+passed**. The production TypeScript/Vite build passed and lint passed with zero
+warnings. The API suite retains one upstream Starlette/HTTPX deprecation warning.
+The GitHub-hosted Linux workflow is configured but has not been executed from
+this local session; its result is not claimed as tested here.
+
+One user-facing bug was reproduced before fixing it: a successful weekly-summary
+request erased an unsent question from the textarea. The assistant now clears
+that field only after successfully sending a chat question. A Testing Library
+regression test and the browser flow both cover this behavior. No API behavior
+needed changing. Existing tests already cover validation, inclusive/exclusive
+date boundaries, hourly/daily totals, empty results, and offline mock startup;
+they were retained instead of duplicating them.
+
+Forecasts remain a separate dashed illustrative series with an explicit origin
+and target horizon, distinct from observed consumption. The chart mapping test
+checks overlapping timestamps without blending the values; the browser flow
+checks the visible labels and non-model disclaimer. Chat/summary responses remain
+placeholders, show the disconnected state, and provide no fabricated citations.
 
 `package-lock.json` records exact resolved versions. The `minimatch` override
 selects the patched 11.x line for development tools while upstream ranges still

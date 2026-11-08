@@ -118,4 +118,13 @@ describe('dashboard request/render cycle', () => {
     await user.click(screen.getByRole('button', { name: 'Retry request' }))
     await waitFor(() => expect(screen.getAllByText(chat.answer)).toHaveLength(2))
   })
+  it('preserves an unsent question when requesting a weekly summary', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: 'Assistant' }))
+    await user.type(screen.getByLabelText('Your question'), 'Why did consumption rise?')
+    await user.click(screen.getByRole('button', { name: 'Request weekly summary' }))
+    await screen.findByText(chat.answer)
+    expect(screen.getByLabelText('Your question')).toHaveValue('Why did consumption rise?')
+  })
 })

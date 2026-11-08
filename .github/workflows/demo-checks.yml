@@ -1,0 +1,52 @@
+name: Student demo checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mock-demo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      APP_DATA_MODE: mock
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install API dependencies into the shared local environment
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install -r api/requirements-dev.txt
+      - name: Test offline mock API
+        run: .venv/bin/python -m pytest -c api/pytest.ini api/tests -q
+      - name: Install locked frontend dependencies
+        working-directory: web
+        run: npm ci
+      - name: Install Chromium and Linux browser dependencies
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: Test frontend
+        working-directory: web
+        run: npm run test:run
+      - name: Build frontend
+        working-directory: web
+        run: npm run build
+      - name: Lint frontend and smoke configuration
+        working-directory: web
+        run: npm run lint
+      - name: Run real mock-mode browser flow
+        working-directory: web
+        # Playwright starts and stops both services; no cloud deployment follows.
+        run: npm run test:e2e

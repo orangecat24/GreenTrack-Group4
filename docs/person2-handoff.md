@@ -121,3 +121,11 @@ All displayed records come from the API; demo flags, units, UTC caveats and
 placeholder assistant behavior remain visible. Requests are cancelled/ignored
 when filters change. Validation: 19 frontend tests, production build, lint, and
 a real desktop/mobile Chrome smoke check passed. npm reports zero vulnerabilities.
+
+Review update (November 8): 57 API tests, 20 frontend tests, build, lint, and a
+committed Playwright Chromium smoke flow passed locally. Run `npm.cmd run test:e2e`
+from `web/`; first install its browser with `npx.cmd playwright install chromium`.
+The test starts/stops its own mock servers on 18000/15173. The new demo-checks
+workflow runs the same checks in CI; the remote workflow has not been run here.
+Fixed weekly-summary requests deleting an unsent chat draft. See `web/README.md`
+for setup, browser installation, reporting, and the remaining upstream API warning.

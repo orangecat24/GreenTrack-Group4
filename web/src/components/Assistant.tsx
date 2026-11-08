@@ -32,7 +32,9 @@ export function Assistant({ window }: { window: WindowQuery | null }) {
         question: body.request_type === 'weekly_summary' ? 'Request a weekly summary' : body.message ?? '',
         response,
       }])
-      setMessage('')
+      // A summary request does not submit the textarea. Keep any unsent draft;
+      // only clear a question after that question was successfully sent.
+      if (body.request_type === 'chat') setMessage('')
     } catch (failure) {
       if (!controller.signal.aborted) setError(failure instanceof Error ? failure.message : 'Assistant request failed.')
     } finally {

@@ -17,6 +17,8 @@ build/
 coverage/
 *.tsbuildinfo
 .qa/
+playwright-report/
+test-results/
 *.log
 
 # Keep safe examples, never real local configuration or credentials.

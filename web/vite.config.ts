@@ -15,13 +15,17 @@ export default defineConfig({
     // server removes /api and forwards /consumption to the existing Python API.
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        // Browser tests use their own API port so normal development servers
+        // can stay running. This is a server-only override, never a VITE_* secret.
+        target: process.env.API_PROXY_TARGET || 'http://127.0.0.1:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api(?=\/|$)/, ''),
       },
     },
   },
   test: {
+    // Playwright specs use a real browser; only src/ belongs to Vitest/jsdom.
+    include: ['src/**/*.test.{ts,tsx}'],
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     restoreMocks: true,
