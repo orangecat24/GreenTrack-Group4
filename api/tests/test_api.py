@@ -42,7 +42,7 @@ def test_default_mode_needs_no_configuration(monkeypatch):
 def test_unsupported_mode_fails_clearly(monkeypatch):
     """A typo or premature AWS setting must never silently produce mock results."""
     monkeypatch.setenv("APP_DATA_MODE", "aws")
-    with pytest.raises(RuntimeError, match="Only APP_DATA_MODE=mock"):
+    with pytest.raises(RuntimeError, match="APP_DATA_MODE must be mock or dynamodb"):
         with TestClient(create_app()):
             pass
 

@@ -10,7 +10,7 @@ from app.main import create_app
 
 
 @pytest.fixture(autouse=True)
-def offline_mock(monkeypatch):
+def offline_mock(monkeypatch, tmp_path):
     """Remove common AWS settings and fail if application code attempts networking."""
     for name in (
         "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN",
@@ -20,6 +20,12 @@ def offline_mock(monkeypatch):
     ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("APP_DATA_MODE", "mock")
+    # Stubber clients use explicit fake credentials. Point the SDK's optional
+    # config/credential paths at nonexistent test paths so it cannot inspect a
+    # developer's actual authentication files while resolving client settings.
+    monkeypatch.setenv("AWS_CONFIG_FILE", str(tmp_path / "absent-aws-config"))
+    monkeypatch.setenv("AWS_SHARED_CREDENTIALS_FILE", str(tmp_path / "absent-aws-credentials"))
+    monkeypatch.setenv("AWS_EC2_METADATA_DISABLED", "true")
 
     def deny_network(*args, **kwargs):
         """TestClient uses in-process ASGI; real connections are always a mistake."""

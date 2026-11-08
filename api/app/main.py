@@ -1,18 +1,18 @@
 """HTTP entry point: validate requests, call the service, serialize typed JSON."""
 
-import os
 from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Query, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from .models import (
     AnomalyPoint, ChatRequest, ChatResponse, ConsumptionQuery, ConsumptionResponse,
     ForecastResponse, HealthResponse, ReadResponse, Window,
 )
-from .repository import MockRepository
+from .repository import RepositoryError
 from .service import EnergyService
+from .storage import create_repository
 
 
 def create_app() -> FastAPI:
@@ -20,18 +20,24 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        """Fail clearly for unsupported modes instead of silently using fake data."""
-        if os.getenv("APP_DATA_MODE", "mock") != "mock":
-            raise RuntimeError("Only APP_DATA_MODE=mock is supported in this increment.")
-        # No AWS imports, credentials lookup, HTTP clients, or inference clients.
-        app.state.energy_service = EnergyService(MockRepository())
-        yield
+        """Choose storage once; the default path never constructs an AWS client."""
+        repository = create_repository()
+        app.state.energy_service = EnergyService(repository)
+        try:
+            yield
+        finally:
+            repository.close()
 
     app = FastAPI(
         title="GreenTrack demo API", version="0.1.0", lifespan=lifespan,
         description=("Synthetic household-1 data, June 1-7, 2009. UTC is a demo "
                      "convention only. Forecast/chat are illustrative or placeholders."),
     )
+
+    @app.exception_handler(RepositoryError)
+    async def storage_error(request: Request, error: RepositoryError) -> JSONResponse:
+        """Return a safe retryable error, never raw AWS exception/credential details."""
+        return JSONResponse(status_code=503, content={"detail": str(error)})
 
     def get_service(request: Request) -> EnergyService:
         """Reuse the service created at startup instead of rebuilding every request."""

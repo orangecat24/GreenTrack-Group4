@@ -1,9 +1,11 @@
 """Deterministic in-memory fixtures; this module has no cloud or network client."""
 
+from collections import defaultdict
 from datetime import UTC, datetime, timedelta
-from typing import Protocol
+from decimal import Decimal
+from typing import Protocol, Sequence, TypeVar
 
-from .models import AnomalyPoint, ConsumptionPoint, ForecastPoint
+from .models import AnomalyPoint, ConsumptionPoint, ConsumptionQuery, ForecastPoint, Window
 
 HOUSEHOLD = "household-1"
 HISTORY_START = datetime(2009, 6, 1, tzinfo=UTC)
@@ -17,24 +19,62 @@ HOURLY_CENTS = (30, 28, 27, 26, 28, 35, 55, 80, 65, 50, 45, 48,
 SPIKES_CENTS = {(1, 18): 250, (3, 19): 310, (5, 12): 190}
 
 
-class EnergyRepository(Protocol):
-    """The small storage contract a future DynamoDB adapter must implement."""
+class RepositoryError(RuntimeError):
+    """A safe storage failure message, without raw AWS errors or configuration."""
 
-    def consumption(self, household_id: str) -> tuple[ConsumptionPoint, ...]:
-        """Return ordered hourly observations for one household."""
+
+Point = TypeVar("Point", bound=ConsumptionPoint | AnomalyPoint)
+
+
+def select_window(records: Sequence[Point], query: Window) -> tuple[Point, ...]:
+    """Select whole buckets by start time with inclusive start/exclusive end."""
+    return tuple(row for row in records if query.start <= row.timestamp < query.end)
+
+
+def daily_totals(readings: Sequence[ConsumptionPoint]) -> tuple[ConsumptionPoint, ...]:
+    """Derive daily rows once for both mock reads and the synthetic seed loader."""
+    totals: dict[tuple[str, datetime], Decimal] = defaultdict(Decimal)
+    for row in readings:
+        day = row.timestamp.astimezone(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        # Decimal(str(...)) sums displayed energy without binary-float drift.
+        totals[(row.household_id, day)] += Decimal(str(row.energy_kwh))
+    return tuple(
+        ConsumptionPoint(household_id=household, timestamp=day,
+                         interval_end=day + timedelta(days=1), energy_kwh=float(total))
+        for (household, day), total in sorted(totals.items())
+    )
+
+
+class EnergyRepository(Protocol):
+    """The small window-aware contract shared by mock and DynamoDB storage."""
+
+    forecast_origin: datetime
+    forecast_target_start: datetime
+    forecast_target_end: datetime
+
+    def consumption(self, query: ConsumptionQuery) -> tuple[ConsumptionPoint, ...]:
+        """Return ordered windowed observations in the requested grain."""
         ...
 
-    def anomalies(self, household_id: str) -> tuple[AnomalyPoint, ...]:
+    def anomalies(self, query: Window) -> tuple[AnomalyPoint, ...]:
         """Return ordered anomaly records for one household."""
         ...
 
-    def forecast(self, household_id: str) -> tuple[ForecastPoint, ...]:
+    def forecast(self, query: Window) -> tuple[ForecastPoint, ...]:
         """Return ordered target hours from the illustrative forecast."""
+        ...
+
+    def close(self) -> None:
+        """Release owned storage resources during application shutdown."""
         ...
 
 
 class MockRepository:
     """Build one coherent week once, then expose immutable fixture records."""
+
+    forecast_origin = FORECAST_ORIGIN
+    forecast_target_start = FORECAST_ORIGIN
+    forecast_target_end = FORECAST_END
 
     def __init__(self) -> None:
         """Create 168 readings, three matching spikes, and 24 future buckets."""
@@ -73,14 +113,19 @@ class MockRepository:
             for hour, reading in enumerate(self._readings[-24:])
         )
 
-    def consumption(self, household_id: str) -> tuple[ConsumptionPoint, ...]:
+    def consumption(self, query: ConsumptionQuery) -> tuple[ConsumptionPoint, ...]:
         """Unknown but well-formed household IDs have no demo observations."""
-        return self._readings if household_id == HOUSEHOLD else ()
+        readings = self._readings if query.household_id == HOUSEHOLD else ()
+        rows = daily_totals(readings) if query.grain == "daily" else readings
+        return select_window(rows, query)
 
-    def anomalies(self, household_id: str) -> tuple[AnomalyPoint, ...]:
+    def anomalies(self, query: Window) -> tuple[AnomalyPoint, ...]:
         """Return the three fixed spikes, with no inference calls."""
-        return self._anomalies if household_id == HOUSEHOLD else ()
+        return select_window(self._anomalies, query) if query.household_id == HOUSEHOLD else ()
 
-    def forecast(self, household_id: str) -> tuple[ForecastPoint, ...]:
+    def forecast(self, query: Window) -> tuple[ForecastPoint, ...]:
         """Return the fixed June 8 target horizon, with no inference calls."""
-        return self._forecast if household_id == HOUSEHOLD else ()
+        return select_window(self._forecast, query) if query.household_id == HOUSEHOLD else ()
+
+    def close(self) -> None:
+        """The in-memory repository has no connections to close."""
