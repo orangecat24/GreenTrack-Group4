@@ -1,0 +1,103 @@
+name: Student demo checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new commit to a PR replaces its older run, rather than spending runner time
+# testing code the reviewer will no longer merge. Other PRs keep their own runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mock-demo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      APP_DATA_MODE: mock
+      AWS_EC2_METADATA_DISABLED: 'true'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - name: Set up Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install API dependencies into the shared local environment
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --disable-pip-version-check -r api/requirements-dev.txt
+          .venv/bin/python -m pip check
+      - name: Test offline mock API
+        run: .venv/bin/python -m pytest -c api/pytest.ini api/tests -q
+      - name: Install locked frontend dependencies
+        working-directory: web
+        run: npm ci
+      - name: Install Chromium and Linux browser dependencies
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: Test frontend
+        working-directory: web
+        run: npm run test:run
+      - name: Lint frontend and smoke configuration
+        working-directory: web
+        run: npm run lint
+      - name: Build frontend
+        working-directory: web
+        run: npm run build
+      - name: Run real mock-mode browser flow
+        working-directory: web
+        # Playwright starts and stops both services; no cloud deployment follows.
+        run: npm run test:e2e
+      - name: Save browser failure report and trace
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mock-browser-failure
+          path: |
+            web/playwright-report/
+            web/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  terraform:
+    name: Terraform configuration checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      TF_IN_AUTOMATION: 'true'
+      TF_INPUT: 'false'
+      AWS_EC2_METADATA_DISABLED: 'true'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.14 for the shared check script
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - name: Discover registered Terraform configurations
+        id: terraform
+        # No Terraform files today: report the skip instead of installing tools.
+        run: python scripts/check_terraform.py --discover
+      - name: Install the repository-pinned Terraform version
+        if: steps.terraform.outputs.has_terraform == 'true'
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ steps.terraform.outputs.terraform_version }}
+          terraform_wrapper: false
+      - name: Check formatting, initialize without backend, and validate
+        if: steps.terraform.outputs.has_terraform == 'true'
+        # This only validates configuration. It never performs an AWS plan/apply.
+        run: python scripts/check_terraform.py

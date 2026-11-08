@@ -1,0 +1,6 @@
+# One deployable Terraform root configuration per line, relative to the repo.
+# No Terraform exists yet. When it is added, register its deployable roots here,
+# add an exact CLI version in .terraform-version, and commit each root's provider
+# lock file (.terraform.lock.hcl). Reusable child modules are checked via roots.
+# Example, only after that configuration exists:
+# infra/environments/dev
