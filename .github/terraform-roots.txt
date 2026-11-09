@@ -4,3 +4,6 @@
 # lock file (.terraform.lock.hcl). Reusable child modules are checked via roots.
 # Example, only after that configuration exists:
 # infra/environments/dev
+
+infra/bootstrap
+infra/environments/dev
