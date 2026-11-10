@@ -2,8 +2,9 @@
 
 Decision for our 7–10 day delivery: start with a small FastAPI service and an
 explicit provisional contract. A React/TypeScript/Vite SPA now consumes it in `web/`.
-An opt-in DynamoDB demo adapter is now implemented locally. No deployed
-infrastructure or live AI integration is included.
+An opt-in DynamoDB demo adapter and Terraform application module are implemented
+locally. Infrastructure is prepared, not deployed by these tasks; live AI
+integration is not included.
 Python 3.14.10 was used; Node 24 LTS is the frontend target. Persistent teaching
 and stack instructions are in `AGENTS.md`.
 
@@ -101,7 +102,7 @@ one daily item (`energy_kwh=13.46`), units and covered dates. Routes handle HTTP
 services handle rules; repositories supply data. Changing storage should not
 require rewriting the HTTP routes.
 
-Person 1 can provision the tables below and agree normalized gold records for
+The tables below are now defined in `infra/challenge1`; Person 1 can agree normalized gold records for
 the small loader boundary; Person 3 can replace the assistant placeholder and supply model outputs.
 Confirm source timezone and agree any contract changes through review, while
 continuing against these fixtures. The four React views now use this API; next
@@ -261,17 +262,50 @@ permissions/resources, and remote CI are unverified; no AWS or Docker was used.
 The existing `demo-checks.yml` now cancels outdated runs per PR and retains browser
 failure reports. It keeps Python 3.14, Node 24, pinned requirements, `npm ci`,
 tests, lint, build, and a credential-free mock browser flow in one workflow.
-There is also a conditional Terraform job: no Terraform exists today, so it
-explicitly skips. When added, register deployable roots in `.github/terraform-roots.txt`,
-pin `.terraform-version`, and commit provider locks. It then checks fmt and runs
-backend-disabled init plus validate, never an AWS plan or apply.
+The Terraform job discovers the existing bootstrap/dev roots, installs the pinned
+CLI and checks formatting, backend-disabled init and validate, never an AWS plan
+or apply. Shared/application child modules are validated through dev, not
+registered as new roots. Each root retains its committed provider lock.
 See [pr-checks.md](pr-checks.md) for matching local commands and finding failed
-GitHub step logs/artifacts. GitHub execution and real Terraform validation have
-not been run locally.
+GitHub step logs/artifacts. GitHub-hosted execution remains unverified; the
+latest local Terraform results are recorded below.
 
-Local PR-check verification passed: pinned Python dependencies and `pip check`,
+Earlier PR-check verification passed: pinned Python dependencies and `pip check`,
 clean cached `npm ci`, 94 pytest tests, 20 frontend tests, lint, production build,
-and one Playwright Chromium flow. The Terraform helper reports the expected skip;
-its registration/lock/path discovery policies were checked using temporary local
-fixtures without invoking Terraform. No Terraform configuration or CLI exists
-here, so fmt/init/validate remain unrun. The upstream HTTPX warning remains.
+and one Playwright Chromium flow. At that earlier increment Terraform discovery
+skipped because no configurations existed. The new infrastructure check results
+are recorded below. The upstream HTTPX warning remains.
+
+## Person 2 application infrastructure (November 10)
+
+`infra/challenge1` is a child module of the existing `infra/environments/dev`
+root: Python 3.14 x86_64 Lambda/Mangum, HTTP API, three matching on-demand
+DynamoDB tables, private frontend S3, CloudFront/OAC, seven-day logs and six
+non-secret SSM parameters. Shared backend/bootstrap/IAM permissions are unchanged.
+The execution role has logs only in mock mode; explicit DynamoDB mode adds only
+Query on these tables. Configuration goes directly into Lambda's environment
+and is also published to SSM, with no runtime SSM lookup. No startup seeding.
+
+The public API/SPA contracts remain unchanged. Gateway-only CORS allows the
+CloudFront origin and local port-5173 origins. Build Vite using the HTTPS API
+base output, without `/api`; the Vite proxy remains local-only. Forecast and
+assistant remain clearly labeled illustrative/placeholder features.
+
+See [application-infrastructure.md](application-infrastructure.md) for the resource
+tour, exact PowerShell/Linux checks and later-only deployment commands, config
+inputs/outputs, cache rules, billable categories and integration limits. Build
+the ZIP before any future plan. The existing CI now builds and tests the actual
+Linux artifact offline; Windows can build but cannot execute its native library.
+Shared deployment-role trust/permission hardening is required before enabling
+AWS deployment automation; it is deliberately deferred, not fixed by this task.
+
+Local verification: **103 API tests**, **20 frontend tests**, lint, build and
+**one Playwright smoke flow** passed; `pip check` passed. The Linux-targeted ZIP
+built with a cp314 x86_64 pydantic-core ELF library. Terraform **1.17.0** fmt,
+backend-disabled init with readonly provider locks and validate passed for
+bootstrap/dev, including both child modules. A portable CLI was downloaded into
+ignored `.qa` without global changes. Provider selections were not changed.
+Actual Linux ZIP execution/CI remains unrun locally (Windows; no running Docker
+daemon). Validation is not an AWS plan: live IAM, quotas, runtime, CORS and
+CloudFront delivery require later authorized AWS checks. No AWS API calls,
+plan/apply, seeding, uploads, invalidations, commits or pushes were performed.

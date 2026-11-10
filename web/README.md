@@ -126,7 +126,14 @@ The `/api` proxy is [development-server configuration](https://vite.dev/config/s
 not something included in static output. A cross-origin deployment also needs
 HTTPS and explicit CORS permission for the frontend's origin on the API/gateway.
 The current mock API has no CORS middleware; use the development proxy locally.
-No deployment or cloud configuration is created by this increment.
+Prepared deployment configuration now lives in `infra/challenge1`, called from
+the existing dev Terraform root. Its HTTP API owns CORS for the CloudFront
+origin and the two local port-5173 origins; FastAPI still has no CORS middleware.
+The default deployment uses the API Gateway HTTPS endpoint with no `/api` or
+named-stage suffix. Use the `application.api_base_url` Terraform output as
+`VITE_API_BASE_URL` before building. No infrastructure or uploads were executed.
+See [the deployment/build guide](../docs/application-infrastructure.md) for exact
+PowerShell/Linux commands, upload order, cache headers and verification limits.
 
 ## Behavior and file tour
 

@@ -41,6 +41,10 @@ jobs:
           .venv/bin/python -m pip check
       - name: Test offline mock API
         run: .venv/bin/python -m pytest -c api/pytest.ini api/tests -q
+      - name: Build Linux Python 3.14 Lambda ZIP and test its actual contents offline
+        run: |
+          .venv/bin/python scripts/build_lambda.py
+          .venv/bin/python scripts/check_lambda_zip.py
       - name: Install locked frontend dependencies
         working-directory: web
         run: npm ci
@@ -89,7 +93,7 @@ jobs:
           python-version: '3.14'
       - name: Discover registered Terraform configurations
         id: terraform
-        # No Terraform files today: report the skip instead of installing tools.
+        # Bootstrap/dev are registered roots; child modules are validated via dev.
         run: python scripts/check_terraform.py --discover
       - name: Install the repository-pinned Terraform version
         if: steps.terraform.outputs.has_terraform == 'true'

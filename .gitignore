@@ -38,3 +38,8 @@ test-results/
 *.tfstate.*
 *.tfvars
 *.tfvars.json
+*.tfplan
+tfplan
+plan.out
+crash.log
+crash.*.log

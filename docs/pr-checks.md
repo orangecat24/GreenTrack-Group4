@@ -15,6 +15,8 @@ The existing `mock-demo` job uses Ubuntu 24.04, **Python 3.14** and **Node 24**:
    `pip check`. `requirements-dev.txt` includes the runtime pins.
 2. Run pytest. DynamoDB responses are stubbed with fake test credentials; tests
    block application network connections and avoid real authentication files.
+   Then build the Linux Python 3.14/x86_64 Lambda ZIP and run its packaged
+   imports/API Gateway event tests offline on Linux. No artifact is sent to AWS.
 3. Run **`npm ci`**, which installs `web/package-lock.json` and fails if it
    disagrees with `package.json`. CI does not regenerate the dependency lockfile.
 4. Install Playwright's matching Chromium and Linux libraries.
@@ -24,8 +26,9 @@ The existing `mock-demo` job uses Ubuntu 24.04, **Python 3.14** and **Node 24**:
 7. If a browser check fails, retain its report/trace artifact for seven days.
 
 The Terraform job is independent, so application failures do not hide its result.
-Today there are **no Terraform files**, so discovery prints an explicit skip and
-does not install Terraform. This is not a successful infrastructure validation.
+`infra/bootstrap` and `infra/environments/dev` are registered roots. The dev root
+also validates `infra/modules/shared` and `infra/challenge1`. CI installs the
+pinned Terraform 1.17.0 and uses each root's committed AWS provider lock.
 
 ## Run the application checks locally: Windows PowerShell
 
@@ -37,6 +40,8 @@ $env:APP_DATA_MODE = 'mock'
 .\.venv\Scripts\python.exe -m pip install -r api\requirements-dev.txt
 .\.venv\Scripts\python.exe -m pip check
 .\.venv\Scripts\python.exe -m pytest -c api\pytest.ini api\tests -q
+.\.venv\Scripts\python.exe scripts/build_lambda.py
+# Linux-only artifact execution: .venv/bin/python scripts/check_lambda_zip.py
 cd web
 npm.cmd ci
 npx.cmd playwright install chromium
@@ -52,9 +57,10 @@ servers on 8000/5173 can stay running. On Linux use `.venv/bin/python`, `npm`, a
 commands. Dependency/browser downloads need internet access, but these checks
 do not use AWS credentials or make real AWS service calls.
 
-## Enable the Terraform checks when infrastructure is added
+## Existing Terraform checks and adding future roots
 
-In the same PR as the first real Terraform configuration:
+The current roots and CLI/provider locks are already configured. When adding
+another genuinely independent deployment root:
 
 - Add its **deployable root directories** to `.github/terraform-roots.txt`, one
   repository-relative path per line, for example `infra/environments/dev`.
@@ -76,7 +82,7 @@ It checks formatting in each source directory, including shared modules. It then
 initializes and validates each registered root using:
 
 ```powershell
-# Illustrative root path; run only after that configuration exists.
+# Existing dev root; these commands do not contact the S3 backend or AWS APIs.
 terraform -chdir=infra/environments/dev fmt -check -diff
 terraform -chdir=infra/environments/dev init -backend=false -input=false -lockfile=readonly
 terraform -chdir=infra/environments/dev validate -no-color
@@ -119,9 +125,13 @@ configure branch protection separately; this task does not change repository set
 
 ## Verification limits
 
-Local application results and the no-Terraform discovery result are recorded in
-the task handoff. GitHub-hosted execution, action downloads, artifact upload,
+Local application and Terraform results are recorded in the task handoff.
+See [application-infrastructure.md](application-infrastructure.md) for Lambda
+packaging, resource/configuration details and later-only deployment commands.
+GitHub-hosted execution, action downloads, artifact upload,
 concurrency cancellation and Linux-only browser-library installation cannot be
-verified by local Windows tests. Actual Terraform fmt/init/validate cannot run
-until configurations and the pinned CLI exist. Nothing is committed or pushed
-by this task, and no remote workflow is triggered.
+verified by local Windows tests. The actual Linux ZIP import/event tests also
+require Linux; building/inspecting that ZIP on Windows does not execute it.
+Terraform fmt/backend-disabled init/validate passed locally for both roots;
+these do not validate live permissions or perform a plan. No deployment or
+remote workflow is triggered by local checks.
