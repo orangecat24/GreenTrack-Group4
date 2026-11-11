@@ -91,6 +91,22 @@ Failures leave an ignored HTML report in `web/playwright-report/` and a screensh
 and trace in `web/test-results/`. Run `npx.cmd playwright show-report` to view the
 report. Browser artifacts and `node_modules` must not be committed.
 
+## Deployed browser smoke
+
+`npm.cmd run test:deployed` uses `playwright.deployed.config.ts` and starts no
+local servers. Set `DEPLOYED_WEBSITE_URL` and `DEPLOYED_API_BASE_URL` to the real
+authorized Terraform application outputs. It runs the same four-tab/date/chat
+journey as the local flow, plus health and explicit CORS preflight checks. It
+also verifies the browser actually requests the deployed API origin, catching
+frontend builds that accidentally retained `/api`. There are two retries, no
+deployed screenshots/traces, and no fallback URL. This command sends real HTTPS
+requests; collection with `--list` does not execute them.
+
+See [deployment-pipeline.md](../docs/deployment-pipeline.md) for exact activation
+variables, commands and recovery. The existing ordinary checks remain offline;
+the separate main deployment pipeline reuses them and is disabled until a
+maintainer explicitly activates it. No cloud deployment has been run here.
+
 The build produces ignored `web/dist/`. `npm.cmd run preview` serves those static
 files for inspection; it does **not** provide the development API proxy.
 

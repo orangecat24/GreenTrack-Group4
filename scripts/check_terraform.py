@@ -51,10 +51,10 @@ def discover() -> tuple[list[Path], list[Path], str]:
     return sorted({file.parent.resolve() for file in files}), roots, version
 
 
-def run(command: list[str]) -> None:
-    """Use argument lists so spaces in Windows checkout paths remain safe."""
+def run(command: list[str], *, env: dict[str, str] | None = None) -> None:
+    """Use argument lists and explicitly isolated Terraform metadata when needed."""
     print("+ " + " ".join(command), flush=True)
-    subprocess.run(command, cwd=ROOT, check=True)
+    subprocess.run(command, cwd=ROOT, check=True, env=env)
 
 
 def main() -> int:
@@ -87,8 +87,15 @@ def main() -> int:
         for path in directories:
             run([executable, f"-chdir={path}", "fmt", "-check", "-diff"])
         for path in roots:
-            run([executable, f"-chdir={path}", "init", "-backend=false", "-input=false", "-lockfile=readonly"])
-            run([executable, f"-chdir={path}", "validate", "-no-color"])
+            # -backend=false alone can still reuse a previously initialized S3
+            # backend in a developer's .terraform directory and refresh state.
+            # Keep offline checks separate without deleting their live metadata.
+            data_dir = ROOT / "build/terraform-checks" / path.relative_to(ROOT)
+            data_dir.mkdir(parents=True, exist_ok=True)
+            environment = {**os.environ, "TF_DATA_DIR": str(data_dir.resolve()),
+                           "AWS_EC2_METADATA_DISABLED": "true"}
+            run([executable, f"-chdir={path}", "init", "-backend=false", "-input=false", "-lockfile=readonly"], env=environment)
+            run([executable, f"-chdir={path}", "validate", "-no-color"], env=environment)
         return 0
     except (ValueError, OSError, subprocess.CalledProcessError) as error:
         print(f"Terraform checks failed: {error}", file=sys.stderr)

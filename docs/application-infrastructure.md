@@ -6,6 +6,10 @@ this task. The teammate reports that the foundation bucket was already applied;
 see [the foundation handoff](foundation-handoff.md). A future authorized
 application plan/apply is still required. Existing local
 Uvicorn/Vite commands and the four-tab UI are unchanged.
+The GitHub pipeline is now prepared but off by default; see
+[deployment-pipeline.md](deployment-pipeline.md) for activation, exact variables,
+readiness evidence and recovery. The manual examples below are alternatives,
+not commands executed by the implementation session.
 
 ## How the pieces connect
 
@@ -181,6 +185,9 @@ for bootstrap/dev. Child modules are checked through dev, not registered as
 new roots. It does not need the ZIP for validation; a future plan fails with a
 clear precondition if the ZIP is absent. Provider lockfiles are unchanged.
 Provider downloads use the internet but do not authenticate to AWS.
+The helper isolates TF_DATA_DIR per root to avoid reusing a developer's live
+backend cache: `-backend=false` alone proved insufficient after real backend
+initialization. Existing .terraform metadata is preserved.
 **Validate is not a plan:** it cannot confirm account permissions, quotas,
 provider data-source results, OAC delivery or a successful runtime deployment.
 
@@ -191,8 +198,10 @@ GitHub role trusts PR subjects and has PowerUserAccess plus broad `g4-` IAM
 management. The team can continue with this setup; narrower trust and permissions,
 including protection against self-modification, are recommended improvements,
 not a technical prerequisite. See [the recorded decision](foundation-handoff.md#current-permission-decision).
-This task deliberately leaves those policies unchanged. Keep ordinary PR checks credential-free. Full project
-plan/apply automation is deferred; there is no deployment workflow here.
+This task deliberately leaves those policies unchanged. Ordinary PR checks stay
+credential-free. Main plan/apply automation is prepared behind `DEPLOY_ENABLED`;
+it has not been enabled or run. Optional AWS PR planning needs separate read-only
+access and does not block main deployment. See [the pipeline guide](deployment-pipeline.md).
 
 1. Reuse the already-applied bootstrap bucket and the recorded account/Region,
    role ARN and dev backend. Coordinate state ownership with the foundation owner;

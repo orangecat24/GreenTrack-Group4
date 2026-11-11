@@ -338,3 +338,47 @@ subjects matched the existing configuration, and 20 local Markdown links plus
 `git diff --check` passed. Only Markdown and a bootstrap explanatory comment
 changed; application tests were not rerun. No AWS authentication, state access,
 deployment, commit or push occurred.
+
+## Deployment pipeline preparation (November 11)
+
+The repository now has an explicitly activated main deployment pipeline and
+optional AWS PR planning. See [deployment-pipeline.md](deployment-pipeline.md)
+for exact setup, configuration names, resource costs, readiness evidence,
+first-run behavior, blockers and recovery; the root README links to it.
+
+`demo-checks.yml` is reused, not copied. It runs tests/build/local smoke and
+offline Terraform checks without credentials, and can pass the tested Linux ZIP
+to the main job in the same run. `deploy-main.yml` uses OIDC only after those
+checks, verifies the account, plans/applies the same saved dev-root plan, builds
+Vite using the API output, uploads hashed assets before HTML, invalidates only
+changed entry HTML, and checks the actual HTTPS site/API/CORS with Playwright.
+Its workflow-level concurrency never cancels an active apply. Activation is
+off unless a maintainer sets repository variable `DEPLOY_ENABLED=true`.
+
+`aws-pr-plan.yml` reports pending unless a trusted same-repository PR has the
+`aws-plan` label and an owner-approved separate read-only planning role is
+configured via `AWS_PR_PLAN_ENABLED`/`AWS_PR_PLAN_ROLE_ARN`. The broad deployment
+role is not reused under a read-only label. Speculative PR plans never lock/write
+state, apply or upload; optional planning does not block main deployment.
+No shared role/policy, Terraform resource, UI or API behavior changed.
+
+Read-only readiness checks now verify the named state object exists (metadata
+only) and the GitHub role/trust/attached and inline policies match the handoff.
+No state contents were downloaded, and those checks cannot prove GitHub OIDC,
+state resource ownership, effective deployment write access or quotas.
+
+An observed local defect was fixed: cached live backend metadata caused
+`init -backend=false` to attempt a state metadata request (403). The check helper
+now isolates TF_DATA_DIR under ignored build/terraform-checks for each root,
+preserving the user's original cache. A regression test protects this behavior.
+The later isolated init/validate checks passed without reusing that live backend.
+
+Validation: **119 Python tests** (103 API + 16 deployment/helper regressions),
+**20 frontend tests**, lint, production build, **one local browser smoke**,
+`pip check`, actionlint **1.7.12** for all workflows, and Terraform **1.17.0**
+fmt/backend-disabled readonly init/validate for both roots passed. The Linux ZIP
+rebuilt at 20,376,799 bytes with the same SHA256 as before; the deployed browser
+test's collection passed without execution. Linux ZIP execution, GitHub-hosted
+Actions/OIDC/artifact transfer, AWS plans/applies/writes and deployed HTTPS/CORS
+remain unexecuted. No account/repository settings, seed writes, uploads,
+invalidations, commits, merges or pushes were performed from this session.

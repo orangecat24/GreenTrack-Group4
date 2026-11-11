@@ -1,16 +1,19 @@
 # Pull-request checks
 
-One workflow, `.github/workflows/demo-checks.yml`, handles pull requests and manual
-runs. It uses `pull_request`, not `pull_request_target`, and grants only
+The ordinary workflow, `.github/workflows/demo-checks.yml`, handles pull requests,
+manual runs and reusable calls from the main pipeline. It uses `pull_request`,
+not `pull_request_target`, and grants only
 `contents: read`. Checkout does not persist credentials. There are no AWS secrets,
 AWS authentication steps, OIDC permissions, deployments, plans, applies, or merges.
 When a newer run starts for the same PR, its older run is cancelled; other PRs
-have independent concurrency groups.
+have independent concurrency groups. Separate, explicitly activated AWS jobs
+are described in [deployment-pipeline.md](deployment-pipeline.md); they do not
+add credentials to these ordinary checks.
 
 The teammate's existing AWS role/backend handoff is recorded in
 [foundation-handoff.md](foundation-handoff.md). Its main/PR trust permits future
 AWS-enabled jobs, but does not authenticate the current workflow automatically.
-The suggested OIDC settings belong to a future AWS-enabled job, not these
+The suggested OIDC settings belong to the prepared AWS-enabled jobs, not these
 ordinary checks. The foundation bucket is reported already applied; offline
 bootstrap validation neither reapplies it nor reads its owner's local state.
 
@@ -20,7 +23,7 @@ The existing `mock-demo` job uses Ubuntu 24.04, **Python 3.14** and **Node 24**:
 
 1. Create `.venv`, install the fully pinned runtime/test requirements, and run
    `pip check`. `requirements-dev.txt` includes the runtime pins.
-2. Run pytest. DynamoDB responses are stubbed with fake test credentials; tests
+2. Run pytest for `api/tests` and `scripts/tests`. DynamoDB responses are stubbed with fake test credentials; tests
    block application network connections and avoid real authentication files.
    Then build the Linux Python 3.14/x86_64 Lambda ZIP and run its packaged
    imports/API Gateway event tests offline on Linux. No artifact is sent to AWS.
@@ -47,6 +50,8 @@ $env:APP_DATA_MODE = 'mock'
 .\.venv\Scripts\python.exe -m pip install -r api\requirements-dev.txt
 .\.venv\Scripts\python.exe -m pip check
 .\.venv\Scripts\python.exe -m pytest -c api\pytest.ini api\tests -q
+# Also run deployment command/cache-isolation regressions:
+.\.venv\Scripts\python.exe -m pytest -c api\pytest.ini scripts\tests -q
 .\.venv\Scripts\python.exe scripts/build_lambda.py
 # Linux-only artifact execution: .venv/bin/python scripts/check_lambda_zip.py
 cd web
@@ -89,7 +94,8 @@ It checks formatting in each source directory, including shared modules. It then
 initializes and validates each registered root using:
 
 ```powershell
-# Existing dev root; these commands do not contact the S3 backend or AWS APIs.
+# Illustrative commands for a FRESH isolated TF_DATA_DIR. Prefer the shared
+# helper below: a developer's existing .terraform cache may have a live backend.
 terraform -chdir=infra/environments/dev fmt -check -diff
 terraform -chdir=infra/environments/dev init -backend=false -input=false -lockfile=readonly
 terraform -chdir=infra/environments/dev validate -no-color
@@ -102,7 +108,10 @@ as CI, from the repository root:
 .\.venv\Scripts\python.exe scripts\check_terraform.py
 ```
 
-`init -backend=false` avoids accessing the configured remote backend. It may still
+The helper uses a separate ignored `build/terraform-checks/...` TF_DATA_DIR per
+root: `-backend=false` alone can reuse live cached backend metadata on a developer
+machine. Isolation prevents that reuse and preserves the existing .terraform
+directory. Provider initialization may still
 download provider/module packages, and `-lockfile=readonly` prevents CI from
 silently changing provider selections. Use publicly downloadable dependencies
 for ordinary credential-free PR checks.
@@ -111,7 +120,10 @@ for ordinary credential-free PR checks.
 using the installed providers. It does not prove that AWS permissions, account
 quotas, data sources, target Region, or proposed resource changes are correct.
 A plan requires its own authorized environment and account context. This workflow
-never runs `plan` or `apply`. See the [Terraform validate documentation](https://developer.hashicorp.com/terraform/cli/commands/validate).
+never runs `plan` or `apply`. The separate optional AWS PR workflow explicitly
+reports pending when read-only planning access is not configured; its result is
+independent of this validation. See [the pipeline guide](deployment-pipeline.md)
+and the [Terraform validate documentation](https://developer.hashicorp.com/terraform/cli/commands/validate).
 
 ## Find a failed step's logs
 

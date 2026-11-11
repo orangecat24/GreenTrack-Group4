@@ -32,8 +32,9 @@ credentials and remote state contents were not inspected.
 These names and the role ARN are configuration identifiers, not access keys.
 The handoff does not prove that the dev state object currently exists or contains
 the shared role, nor that any Person 2 application resources have been applied.
-The GitHub role's existence/permissions and state contents remain unverified.
-The state bucket's existence and limited access are now verified below.
+Later checks verified the GitHub role's existence/trust/policy configuration and
+the state object's existence, as recorded below and in the pipeline guide.
+State contents and effective deployment write permissions remain unverified.
 
 ## Ownership: reuse the existing foundation
 
@@ -91,7 +92,7 @@ Mock mode still requires no AWS credentials and makes no application AWS calls.
 References: [AWS PowerUserAccess policy](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/PowerUserAccess.html),
 [GitHub OIDC configuration](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws).
 
-## GitHub Actions handoff: recorded, not enabled
+## GitHub Actions handoff: prepared, not enabled
 
 The teammate's guidance for a future AWS-enabled job is:
 
@@ -108,8 +109,10 @@ every PR check or automatically running apply on PRs.
 The existing `.github/workflows/demo-checks.yml` remains credential-free:
 application tests, artifact checks, fmt, backend-disabled init and validate.
 There are no AWS authentication steps, OIDC permissions, AWS plans, applies or
-uploads in it. A future deployment-workflow task can use the existing role;
-this update does not enable one or require hardening before local work continues.
+uploads in it. The separate main deployment pipeline now uses the existing role
+behind explicit activation; optional PR planning requires another read-only role.
+See [deployment-pipeline.md](deployment-pipeline.md). Neither activation nor
+deployment was performed from chat, and shared IAM configuration is unchanged.
 
 See [application-infrastructure.md](application-infrastructure.md) for the
 application build/deployment order and [pr-checks.md](pr-checks.md) for safe local
@@ -145,3 +148,16 @@ Future local Terraform commands should use `AWS_PROFILE=greentrack` and
 the GitHub-only role from the laptop is needed. Backend initialization, plans,
 applies and resource writes were not run during this verification. No code,
 workflow, permissions or AWS resources changed.
+
+## Deployment-pipeline readiness update (November 11, 2026)
+
+Additional authorized read-only checks confirm the dev state object exists
+(HeadObject metadata only), the named GitHub role exists, its audience/main/PR
+trust matches the handoff, PowerUserAccess is attached, and its custom g4-* IAM
+policy matches the repository. No state contents were read and no permissions
+were modified. The original bootstrap applied-on-laptop statement remains
+teammate-reported; live bucket encryption/versioning were not rechecked.
+
+The new [pipeline guide](deployment-pipeline.md) records exact evidence, activation
+variables, optional planning-role requirements, failure recovery and verification
+limits. GitHub OIDC, effective write access and deployment remain untested.
