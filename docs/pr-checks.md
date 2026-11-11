@@ -7,6 +7,13 @@ AWS authentication steps, OIDC permissions, deployments, plans, applies, or merg
 When a newer run starts for the same PR, its older run is cancelled; other PRs
 have independent concurrency groups.
 
+The teammate's existing AWS role/backend handoff is recorded in
+[foundation-handoff.md](foundation-handoff.md). Its main/PR trust permits future
+AWS-enabled jobs, but does not authenticate the current workflow automatically.
+The suggested OIDC settings belong to a future AWS-enabled job, not these
+ordinary checks. The foundation bucket is reported already applied; offline
+bootstrap validation neither reapplies it nor reads its owner's local state.
+
 ## What happens in GitHub
 
 The existing `mock-demo` job uses Ubuntu 24.04, **Python 3.14** and **Node 24**:

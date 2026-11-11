@@ -2,7 +2,9 @@
 
 This increment defines the application and builds a local deployment artifact.
 No AWS resource, backend state, table, asset upload or deployment was accessed by
-this task. A future authorized plan/apply is still required. Existing local
+this task. The teammate reports that the foundation bucket was already applied;
+see [the foundation handoff](foundation-handoff.md). A future authorized
+application plan/apply is still required. Existing local
 Uvicorn/Vite commands and the four-tab UI are unchanged.
 
 ## How the pieces connect
@@ -23,8 +25,11 @@ using a public URL embedded at frontend build time. There is no CloudFront
 bootstrap state. `infra/environments/dev` still owns the development S3 backend,
 account guard and eu-central-1 provider. Its new `application.tf` calls
 `infra/challenge1`; `infra/modules/shared` and its deployment role are unchanged.
-The configuration does not establish whether anyone previously applied the
-foundation. Confirm that separately before a deployment; do not recreate it.
+The foundation PR reports bootstrap was already applied from the owner's laptop
+and supplies the existing role ARN and dev backend settings. Those exact values
+are recorded in [foundation-handoff.md](foundation-handoff.md). Reuse them; do
+not recreate the bucket or lose the owner's local bootstrap state. We have not
+inspected AWS or confirmed which resources are tracked in dev's remote state.
 
 ## Resources and defaults
 
@@ -183,13 +188,17 @@ provider data-source results, OAC delivery or a successful runtime deployment.
 
 Before any deployment, coordinate with the foundation owner. The current shared
 GitHub role trusts PR subjects and has PowerUserAccess plus broad `g4-` IAM
-management. Harden its trust and permissions, including self-modification risk,
-before connecting GitHub Actions to AWS. This task deliberately leaves those
-policies unchanged. Keep ordinary PR checks credential-free. Full project
+management. The team can continue with this setup; narrower trust and permissions,
+including protection against self-modification, are recommended improvements,
+not a technical prerequisite. See [the recorded decision](foundation-handoff.md#current-permission-decision).
+This task deliberately leaves those policies unchanged. Keep ordinary PR checks credential-free. Full project
 plan/apply automation is deferred; there is no deployment workflow here.
 
-1. Confirm the existing bootstrap bucket/state and account with its owner.
-   Preserve bootstrap's local state. Do not create a second foundation.
+1. Reuse the already-applied bootstrap bucket and the recorded account/Region,
+   role ARN and dev backend. Coordinate state ownership with the foundation owner;
+   the handoff does not establish dev state's contents. Preserve bootstrap's
+   local state with its owner. Do not create a second foundation or reapply
+   bootstrap from a fresh checkout.
 2. Build/test the Linux Lambda ZIP. Rebuild it whenever application code or
    runtime requirements change; Terraform uses its file hash to detect updates.
 3. In an explicitly authorized AWS session, initialize the dev backend, review

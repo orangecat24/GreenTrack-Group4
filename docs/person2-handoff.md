@@ -3,8 +3,10 @@
 Decision for our 7–10 day delivery: start with a small FastAPI service and an
 explicit provisional contract. A React/TypeScript/Vite SPA now consumes it in `web/`.
 An opt-in DynamoDB demo adapter and Terraform application module are implemented
-locally. Infrastructure is prepared, not deployed by these tasks; live AI
-integration is not included.
+locally. Person 2's application infrastructure is prepared, not deployed by these
+tasks. The teammate reports that the foundation state bucket was already applied;
+see [the foundation handoff](foundation-handoff.md) for its role/backend details
+and verification limits. Live AI integration is not included.
 Python 3.14.10 was used; Node 24 LTS is the frontend target. Persistent teaching
 and stack instructions are in `AGENTS.md`.
 
@@ -296,8 +298,10 @@ tour, exact PowerShell/Linux checks and later-only deployment commands, config
 inputs/outputs, cache rules, billable categories and integration limits. Build
 the ZIP before any future plan. The existing CI now builds and tests the actual
 Linux artifact offline; Windows can build but cannot execute its native library.
-Shared deployment-role trust/permission hardening is required before enabling
-AWS deployment automation; it is deliberately deferred, not fixed by this task.
+Shared deployment-role trust/permission hardening is recommended, not a technical
+blocker. The current broad role and main/PR trust are deliberately retained; see
+[the recorded foundation decision](foundation-handoff.md#current-permission-decision).
+Ordinary PR checks remain credential-free and deployment automation is not enabled.
 
 Local verification: **103 API tests**, **20 frontend tests**, lint, build and
 **one Playwright smoke flow** passed; `pip check` passed. The Linux-targeted ZIP
@@ -309,3 +313,28 @@ Actual Linux ZIP execution/CI remains unrun locally (Windows; no running Docker
 daemon). Validation is not an AWS plan: live IAM, quotas, runtime, CORS and
 CloudFront delivery require later authorized AWS checks. No AWS API calls,
 plan/apply, seeding, uploads, invalidations, commits or pushes were performed.
+
+## Foundation handoff correction (November 11)
+
+The teammate's PR description, supplied after the application increment, confirms
+that bootstrap was already applied from his laptop and provides the deployment
+role ARN, Region and dev state location. These are now preserved in
+[foundation-handoff.md](foundation-handoff.md), linked from the root README and
+deployment guide. The application's existing dev-root wiring already matches
+the handoff, so no Terraform resource, backend, UI or API change was needed.
+The bootstrap header now explicitly says it was already applied and points to
+the state owner; shared IAM code and provider locks are unchanged.
+
+The foundation role can continue to be used as designed, subject to its broad
+permissions and PR trust. Hardening is an improvement, not an absolute technical
+requirement. The teammate's OIDC job settings are documented for later use, not
+enabled in ordinary checks. AGENTS.md now requires persistent Markdown records
+for substantial changes/teammate handoffs, alongside a junior-friendly chat report.
+No AWS service or state access was used to verify the reported deployment status.
+
+Verification for this correction: Terraform 1.17.0 formatting and validation
+passed for bootstrap/dev, root discovery passed, foundation identifiers/trust
+subjects matched the existing configuration, and 20 local Markdown links plus
+`git diff --check` passed. Only Markdown and a bootstrap explanatory comment
+changed; application tests were not rerun. No AWS authentication, state access,
+deployment, commit or push occurred.
