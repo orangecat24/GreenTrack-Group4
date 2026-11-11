@@ -10,8 +10,9 @@ alongside the code; future PR descriptions should link to repository Markdown.
 The teammate explicitly reports that **bootstrap was already applied once from
 his laptop**. Do not treat the state bucket as a new resource to create from a
 fresh checkout. The PR also hands over the GitHub deployment role and dev backend
-settings below. No AWS API, credentials or remote state were inspected to verify
-these statements during this documentation update.
+settings below. The initial handoff capture did not verify AWS resources.
+The later read-only CLI verification is recorded at the end of this document;
+credentials and remote state contents were not inspected.
 
 | Item | Handoff value |
 | --- | --- |
@@ -31,7 +32,8 @@ these statements during this documentation update.
 These names and the role ARN are configuration identifiers, not access keys.
 The handoff does not prove that the dev state object currently exists or contains
 the shared role, nor that any Person 2 application resources have been applied.
-Role existence/permissions and state contents remain unverified locally.
+The GitHub role's existence/permissions and state contents remain unverified.
+The state bucket's existence and limited access are now verified below.
 
 ## Ownership: reuse the existing foundation
 
@@ -113,3 +115,33 @@ See [application-infrastructure.md](application-infrastructure.md) for the
 application build/deployment order and [pr-checks.md](pr-checks.md) for safe local
 checks. Markdown handoffs and the chat completion report remain part of the
 working process, even when a PR description also summarizes the work.
+
+## Local SSO and bucket verification (November 11, 2026)
+
+With Vangjel's authorization to check his CLI setup, these read-only checks
+were run using profile `greentrack`:
+
+- AWS CLI is `2.36.29`; the saved client Region is `eu-central-1`.
+- STS GetCallerIdentity returned account `886565871385` and an assumed
+  `AWSReservedSSO_DeveloperAdminAccess_...` role. This is the local DataMax SSO
+  identity, not the GitHub OIDC deployment role. No session tokens were displayed.
+- S3 HeadBucket succeeded for `g4-greentrack-tfstate-886565871385`, with expected
+  owner `886565871385`, and returned `BucketRegion=eu-central-1`.
+
+This confirms a working local SSO session and access for that bucket check.
+HeadBucket requires ListBucket on this general-purpose bucket; it does not prove
+GetObject/PutObject rights on state, lock-file writes/deletes, or application
+deployment permissions. No bucket objects were listed/downloaded and the dev
+state's existence/contents were not checked. Bucket encryption/versioning,
+the GitHub role's live policies and application deployment remain unverified.
+
+The local Terraform on PATH is `1.17.2`, while `.terraform-version` and the check
+helper require exactly `1.17.0`. The existing ignored portable copy at
+`.qa/terraform-1.17.0/terraform.exe` can be selected for this terminal only; no
+uninstall, global PATH change or repository pin change is necessary.
+
+Future local Terraform commands should use `AWS_PROFILE=greentrack` and
+`AWS_REGION=eu-central-1`, with the existing **dev** backend. No attempt to assume
+the GitHub-only role from the laptop is needed. Backend initialization, plans,
+applies and resource writes were not run during this verification. No code,
+workflow, permissions or AWS resources changed.
