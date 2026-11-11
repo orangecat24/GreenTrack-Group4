@@ -1,9 +1,6 @@
 # One deployable Terraform root configuration per line, relative to the repo.
-# No Terraform exists yet. When it is added, register its deployable roots here,
-# add an exact CLI version in .terraform-version, and commit each root's provider
-# lock file (.terraform.lock.hcl). Reusable child modules are checked via roots.
-# Example, only after that configuration exists:
-# infra/environments/dev
+# Bootstrap and dev share the pinned CLI and retain their own provider locks.
+# infra/challenge1 and infra/modules/shared are child modules, checked via dev.
 
 infra/bootstrap
 infra/environments/dev

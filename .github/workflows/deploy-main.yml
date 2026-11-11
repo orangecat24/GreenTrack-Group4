@@ -1,0 +1,123 @@
+name: Deploy student demo
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Unlike PR checks, a newer main push must never cancel a running apply.
+# All future writers of this dev state must use this same group as well.
+concurrency:
+  group: greentrack-886565871385-dev-state
+  cancel-in-progress: false
+
+jobs:
+  activation:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Explain whether deployment is enabled
+        env:
+          DEPLOY_ENABLED: ${{ vars.DEPLOY_ENABLED }}
+        run: |
+          if [ "$DEPLOY_ENABLED" = true ]; then
+            echo 'Deployment enabled; required checks run before AWS authentication.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Deployment disabled. Set repository variable DEPLOY_ENABLED=true only after the documented setup.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  checks:
+    if: vars.DEPLOY_ENABLED == 'true'
+    uses: ./.github/workflows/demo-checks.yml
+    with:
+      publish_lambda_artifact: true
+
+  deploy:
+    needs: checks
+    if: vars.DEPLOY_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write
+    # No GitHub Environment: existing trust expects the main-branch subject.
+    env:
+      DEPLOY_ENABLED: ${{ vars.DEPLOY_ENABLED }}
+      APP_DATA_MODE: mock
+      AWS_REGION: eu-central-1
+      AWS_DEFAULT_REGION: eu-central-1
+      AWS_EC2_METADATA_DISABLED: 'true'
+      AWS_MAX_ATTEMPTS: '3'
+      AWS_PAGER: ''
+      TF_IN_AUTOMATION: 'true'
+      TF_INPUT: 'false'
+      CHECKPOINT_DISABLE: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Read the Terraform pin
+        id: terraform
+        run: python scripts/check_terraform.py --discover
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ steps.terraform.outputs.terraform_version }}
+          terraform_wrapper: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: greentrack-lambda-${{ github.sha }}
+          path: build
+      - name: Authenticate the existing GitHub role using OIDC
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::886565871385:role/g4-greentrack-github-deploy
+          aws-region: eu-central-1
+          allowed-account-ids: '886565871385'
+          role-session-name: greentrack-main-${{ github.run_id }}
+          role-duration-seconds: 3600
+          unset-current-credentials: true
+          output-credentials: false
+      - name: Verify account and initialize the existing dev backend
+        run: python scripts/deployment.py init
+      - name: Plan the mock application in the existing dev root
+        run: python scripts/deployment.py plan
+      - name: Apply this runner's saved plan
+        run: python scripts/deployment.py apply
+      - name: Read validated public application outputs
+        id: application
+        run: python scripts/deployment.py outputs
+      - name: Build the frontend with its deployed API prefix
+        working-directory: web
+        env:
+          VITE_API_BASE_URL: ${{ steps.application.outputs.api_base_url }}
+        run: |
+          npm ci
+          npm run build
+      - name: Publish assets, then HTML, and invalidate changed HTML
+        run: python scripts/deployment.py publish
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: Check the real HTTPS deployment, browser data and CORS
+        working-directory: web
+        env:
+          DEPLOYED_WEBSITE_URL: ${{ steps.application.outputs.website_url }}
+          DEPLOYED_API_BASE_URL: ${{ steps.application.outputs.api_base_url }}
+        run: npm run test:deployed
+      - name: Report outcome without publishing plans, state or credentials
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+          WEBSITE_URL: ${{ steps.application.outputs.website_url }}
+          API_BASE_URL: ${{ steps.application.outputs.api_base_url }}
+        run: |
+          printf 'Deployment result: %s\n\nWebsite: %s\n\nAPI: %s\n' "$RESULT" "$WEBSITE_URL" "$API_BASE_URL" >> "$GITHUB_STEP_SUMMARY"

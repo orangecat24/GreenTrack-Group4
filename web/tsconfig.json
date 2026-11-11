@@ -15,5 +15,5 @@
     "noUnusedParameters": true,
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src", "vite.config.ts", "playwright.config.ts", "e2e"]
+  "include": ["src", "vite.config.ts", "playwright.config.ts", "playwright.deployed.config.ts", "e2e", "deployed"]
 }

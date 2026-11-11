@@ -1,5 +1,7 @@
 # Creates the S3 bucket that stores Terraform state for group 4.
-# Run this ONCE from a laptop. Its own small state file stays local in this folder.
+# ALREADY APPLIED by the foundation owner from his laptop (teammate PR handoff).
+# Its state stays with that owner; do not bootstrap again from a fresh checkout.
+# See docs/foundation-handoff.md. Offline init/validate is still safe.
 
 terraform {
   required_version = ">= 1.10"

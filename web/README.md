@@ -91,6 +91,22 @@ Failures leave an ignored HTML report in `web/playwright-report/` and a screensh
 and trace in `web/test-results/`. Run `npx.cmd playwright show-report` to view the
 report. Browser artifacts and `node_modules` must not be committed.
 
+## Deployed browser smoke
+
+`npm.cmd run test:deployed` uses `playwright.deployed.config.ts` and starts no
+local servers. Set `DEPLOYED_WEBSITE_URL` and `DEPLOYED_API_BASE_URL` to the real
+authorized Terraform application outputs. It runs the same four-tab/date/chat
+journey as the local flow, plus health and explicit CORS preflight checks. It
+also verifies the browser actually requests the deployed API origin, catching
+frontend builds that accidentally retained `/api`. There are two retries, no
+deployed screenshots/traces, and no fallback URL. This command sends real HTTPS
+requests; collection with `--list` does not execute them.
+
+See [deployment-pipeline.md](../docs/deployment-pipeline.md) for exact activation
+variables, commands and recovery. The existing ordinary checks remain offline;
+the separate main deployment pipeline reuses them and is disabled until a
+maintainer explicitly activates it. No cloud deployment has been run here.
+
 The build produces ignored `web/dist/`. `npm.cmd run preview` serves those static
 files for inspection; it does **not** provide the development API proxy.
 
@@ -126,7 +142,14 @@ The `/api` proxy is [development-server configuration](https://vite.dev/config/s
 not something included in static output. A cross-origin deployment also needs
 HTTPS and explicit CORS permission for the frontend's origin on the API/gateway.
 The current mock API has no CORS middleware; use the development proxy locally.
-No deployment or cloud configuration is created by this increment.
+Prepared deployment configuration now lives in `infra/challenge1`, called from
+the existing dev Terraform root. Its HTTP API owns CORS for the CloudFront
+origin and the two local port-5173 origins; FastAPI still has no CORS middleware.
+The default deployment uses the API Gateway HTTPS endpoint with no `/api` or
+named-stage suffix. Use the `application.api_base_url` Terraform output as
+`VITE_API_BASE_URL` before building. No infrastructure or uploads were executed.
+See [the deployment/build guide](../docs/application-infrastructure.md) for exact
+PowerShell/Linux commands, upload order, cache headers and verification limits.
 
 ## Behavior and file tour
 
