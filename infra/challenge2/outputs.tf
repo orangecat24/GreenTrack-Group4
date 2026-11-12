@@ -28,6 +28,21 @@ output "bronze_job_name" {
   value       = aws_glue_job.bronze.name
 }
 
+output "silver_database_name" {
+  description = "Glue catalog database for the silver layer."
+  value       = aws_glue_catalog_database.silver.name
+}
+
+output "silver_table_name" {
+  description = "Iceberg readings table; created by the silver job's first run."
+  value       = "readings"
+}
+
+output "silver_job_name" {
+  description = "Glue job cleaning bronze into the silver Iceberg table."
+  value       = aws_glue_job.silver.name
+}
+
 output "glue_pipeline_role_arn" {
   description = "IAM role the Glue pipeline jobs run as."
   value       = aws_iam_role.glue_pipeline.arn

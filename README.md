@@ -9,6 +9,7 @@ GreenTrack student demo: FastAPI, React/TypeScript/Vite and Terraform.
 - [Pull-request checks and troubleshooting](docs/pr-checks.md)
 - [Deployment pipeline activation, readiness and recovery](docs/deployment-pipeline.md)
 - [Data lake and bronze layer (Challenge 2)](docs/data-lake-bronze.md)
+- [Silver layer: cleaned Iceberg readings (Challenge 2)](docs/data-lake-silver.md)
 
 The foundation handoff reports that the Terraform state bucket was already
 applied by its owner. Person 2's application is prepared for deployment; local

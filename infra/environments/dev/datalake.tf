@@ -6,6 +6,7 @@ module "challenge2" {
   source                 = "../../challenge2"
   name_prefix            = "g4-greentrack-dev"
   bronze_job_script_path = abspath("${path.module}/../../../data/glue/bronze_job.py")
+  silver_job_script_path = abspath("${path.module}/../../../data/glue/silver_job.py")
 }
 
 output "data_lake" {
@@ -17,6 +18,9 @@ output "data_lake" {
     bronze_database_name   = module.challenge2.bronze_database_name
     bronze_table_name      = module.challenge2.bronze_table_name
     bronze_job_name        = module.challenge2.bronze_job_name
+    silver_database_name   = module.challenge2.silver_database_name
+    silver_table_name      = module.challenge2.silver_table_name
+    silver_job_name        = module.challenge2.silver_job_name
     glue_pipeline_role_arn = module.challenge2.glue_pipeline_role_arn
   }
 }

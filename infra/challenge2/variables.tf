@@ -12,6 +12,11 @@ variable "bronze_job_script_path" {
   type        = string
 }
 
+variable "silver_job_script_path" {
+  description = "Absolute path to data/glue/silver_job.py; the root passes it in, the module uploads it to S3."
+  type        = string
+}
+
 variable "tags" {
   description = "Additional data lake tags; the inherited provider also supplies group/project/dev tags."
   type        = map(string)
