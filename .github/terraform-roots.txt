@@ -1,6 +1,7 @@
 # One deployable Terraform root configuration per line, relative to the repo.
 # Bootstrap and dev share the pinned CLI and retain their own provider locks.
-# infra/challenge1 and infra/modules/shared are child modules, checked via dev.
+# infra/challenge1, infra/challenge2 and infra/modules/shared are child
+# modules, checked via dev.
 
 infra/bootstrap
 infra/environments/dev
