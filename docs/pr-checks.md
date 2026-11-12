@@ -1,11 +1,21 @@
 # Pull-request checks
 
-One workflow, `.github/workflows/demo-checks.yml`, handles pull requests and manual
-runs. It uses `pull_request`, not `pull_request_target`, and grants only
+The ordinary workflow, `.github/workflows/demo-checks.yml`, handles pull requests,
+manual runs and reusable calls from the main pipeline. It uses `pull_request`,
+not `pull_request_target`, and grants only
 `contents: read`. Checkout does not persist credentials. There are no AWS secrets,
 AWS authentication steps, OIDC permissions, deployments, plans, applies, or merges.
 When a newer run starts for the same PR, its older run is cancelled; other PRs
-have independent concurrency groups.
+have independent concurrency groups. Separate, explicitly activated AWS jobs
+are described in [deployment-pipeline.md](deployment-pipeline.md); they do not
+add credentials to these ordinary checks.
+
+The teammate's existing AWS role/backend handoff is recorded in
+[foundation-handoff.md](foundation-handoff.md). Its main/PR trust permits future
+AWS-enabled jobs, but does not authenticate the current workflow automatically.
+The suggested OIDC settings belong to the prepared AWS-enabled jobs, not these
+ordinary checks. The foundation bucket is reported already applied; offline
+bootstrap validation neither reapplies it nor reads its owner's local state.
 
 ## What happens in GitHub
 
@@ -13,8 +23,10 @@ The existing `mock-demo` job uses Ubuntu 24.04, **Python 3.14** and **Node 24**:
 
 1. Create `.venv`, install the fully pinned runtime/test requirements, and run
    `pip check`. `requirements-dev.txt` includes the runtime pins.
-2. Run pytest. DynamoDB responses are stubbed with fake test credentials; tests
+2. Run pytest for `api/tests` and `scripts/tests`. DynamoDB responses are stubbed with fake test credentials; tests
    block application network connections and avoid real authentication files.
+   Then build the Linux Python 3.14/x86_64 Lambda ZIP and run its packaged
+   imports/API Gateway event tests offline on Linux. No artifact is sent to AWS.
 3. Run **`npm ci`**, which installs `web/package-lock.json` and fails if it
    disagrees with `package.json`. CI does not regenerate the dependency lockfile.
 4. Install Playwright's matching Chromium and Linux libraries.
@@ -24,8 +36,9 @@ The existing `mock-demo` job uses Ubuntu 24.04, **Python 3.14** and **Node 24**:
 7. If a browser check fails, retain its report/trace artifact for seven days.
 
 The Terraform job is independent, so application failures do not hide its result.
-Today there are **no Terraform files**, so discovery prints an explicit skip and
-does not install Terraform. This is not a successful infrastructure validation.
+`infra/bootstrap` and `infra/environments/dev` are registered roots. The dev root
+also validates `infra/modules/shared` and `infra/challenge1`. CI installs the
+pinned Terraform 1.17.0 and uses each root's committed AWS provider lock.
 
 ## Run the application checks locally: Windows PowerShell
 
@@ -37,6 +50,10 @@ $env:APP_DATA_MODE = 'mock'
 .\.venv\Scripts\python.exe -m pip install -r api\requirements-dev.txt
 .\.venv\Scripts\python.exe -m pip check
 .\.venv\Scripts\python.exe -m pytest -c api\pytest.ini api\tests -q
+# Also run deployment command/cache-isolation regressions:
+.\.venv\Scripts\python.exe -m pytest -c api\pytest.ini scripts\tests -q
+.\.venv\Scripts\python.exe scripts/build_lambda.py
+# Linux-only artifact execution: .venv/bin/python scripts/check_lambda_zip.py
 cd web
 npm.cmd ci
 npx.cmd playwright install chromium
@@ -52,9 +69,10 @@ servers on 8000/5173 can stay running. On Linux use `.venv/bin/python`, `npm`, a
 commands. Dependency/browser downloads need internet access, but these checks
 do not use AWS credentials or make real AWS service calls.
 
-## Enable the Terraform checks when infrastructure is added
+## Existing Terraform checks and adding future roots
 
-In the same PR as the first real Terraform configuration:
+The current roots and CLI/provider locks are already configured. When adding
+another genuinely independent deployment root:
 
 - Add its **deployable root directories** to `.github/terraform-roots.txt`, one
   repository-relative path per line, for example `infra/environments/dev`.
@@ -76,7 +94,8 @@ It checks formatting in each source directory, including shared modules. It then
 initializes and validates each registered root using:
 
 ```powershell
-# Illustrative root path; run only after that configuration exists.
+# Illustrative commands for a FRESH isolated TF_DATA_DIR. Prefer the shared
+# helper below: a developer's existing .terraform cache may have a live backend.
 terraform -chdir=infra/environments/dev fmt -check -diff
 terraform -chdir=infra/environments/dev init -backend=false -input=false -lockfile=readonly
 terraform -chdir=infra/environments/dev validate -no-color
@@ -89,7 +108,10 @@ as CI, from the repository root:
 .\.venv\Scripts\python.exe scripts\check_terraform.py
 ```
 
-`init -backend=false` avoids accessing the configured remote backend. It may still
+The helper uses a separate ignored `build/terraform-checks/...` TF_DATA_DIR per
+root: `-backend=false` alone can reuse live cached backend metadata on a developer
+machine. Isolation prevents that reuse and preserves the existing .terraform
+directory. Provider initialization may still
 download provider/module packages, and `-lockfile=readonly` prevents CI from
 silently changing provider selections. Use publicly downloadable dependencies
 for ordinary credential-free PR checks.
@@ -98,7 +120,10 @@ for ordinary credential-free PR checks.
 using the installed providers. It does not prove that AWS permissions, account
 quotas, data sources, target Region, or proposed resource changes are correct.
 A plan requires its own authorized environment and account context. This workflow
-never runs `plan` or `apply`. See the [Terraform validate documentation](https://developer.hashicorp.com/terraform/cli/commands/validate).
+never runs `plan` or `apply`. The separate optional AWS PR workflow explicitly
+reports pending when read-only planning access is not configured; its result is
+independent of this validation. See [the pipeline guide](deployment-pipeline.md)
+and the [Terraform validate documentation](https://developer.hashicorp.com/terraform/cli/commands/validate).
 
 ## Find a failed step's logs
 
@@ -119,9 +144,13 @@ configure branch protection separately; this task does not change repository set
 
 ## Verification limits
 
-Local application results and the no-Terraform discovery result are recorded in
-the task handoff. GitHub-hosted execution, action downloads, artifact upload,
+Local application and Terraform results are recorded in the task handoff.
+See [application-infrastructure.md](application-infrastructure.md) for Lambda
+packaging, resource/configuration details and later-only deployment commands.
+GitHub-hosted execution, action downloads, artifact upload,
 concurrency cancellation and Linux-only browser-library installation cannot be
-verified by local Windows tests. Actual Terraform fmt/init/validate cannot run
-until configurations and the pinned CLI exist. Nothing is committed or pushed
-by this task, and no remote workflow is triggered.
+verified by local Windows tests. The actual Linux ZIP import/event tests also
+require Linux; building/inspecting that ZIP on Windows does not execute it.
+Terraform fmt/backend-disabled init/validate passed locally for both roots;
+these do not validate live permissions or perform a plan. No deployment or
+remote workflow is triggered by local checks.

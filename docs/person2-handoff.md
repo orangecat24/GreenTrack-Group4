@@ -2,8 +2,11 @@
 
 Decision for our 7–10 day delivery: start with a small FastAPI service and an
 explicit provisional contract. A React/TypeScript/Vite SPA now consumes it in `web/`.
-An opt-in DynamoDB demo adapter is now implemented locally. No deployed
-infrastructure or live AI integration is included.
+An opt-in DynamoDB demo adapter and Terraform application module are implemented
+locally. Person 2's application infrastructure is prepared, not deployed by these
+tasks. The teammate reports that the foundation state bucket was already applied;
+see [the foundation handoff](foundation-handoff.md) for its role/backend details
+and verification limits. Live AI integration is not included.
 Python 3.14.10 was used; Node 24 LTS is the frontend target. Persistent teaching
 and stack instructions are in `AGENTS.md`.
 
@@ -101,7 +104,7 @@ one daily item (`energy_kwh=13.46`), units and covered dates. Routes handle HTTP
 services handle rules; repositories supply data. Changing storage should not
 require rewriting the HTTP routes.
 
-Person 1 can provision the tables below and agree normalized gold records for
+The tables below are now defined in `infra/challenge1`; Person 1 can agree normalized gold records for
 the small loader boundary; Person 3 can replace the assistant placeholder and supply model outputs.
 Confirm source timezone and agree any contract changes through review, while
 continuing against these fixtures. The four React views now use this API; next
@@ -261,17 +264,121 @@ permissions/resources, and remote CI are unverified; no AWS or Docker was used.
 The existing `demo-checks.yml` now cancels outdated runs per PR and retains browser
 failure reports. It keeps Python 3.14, Node 24, pinned requirements, `npm ci`,
 tests, lint, build, and a credential-free mock browser flow in one workflow.
-There is also a conditional Terraform job: no Terraform exists today, so it
-explicitly skips. When added, register deployable roots in `.github/terraform-roots.txt`,
-pin `.terraform-version`, and commit provider locks. It then checks fmt and runs
-backend-disabled init plus validate, never an AWS plan or apply.
+The Terraform job discovers the existing bootstrap/dev roots, installs the pinned
+CLI and checks formatting, backend-disabled init and validate, never an AWS plan
+or apply. Shared/application child modules are validated through dev, not
+registered as new roots. Each root retains its committed provider lock.
 See [pr-checks.md](pr-checks.md) for matching local commands and finding failed
-GitHub step logs/artifacts. GitHub execution and real Terraform validation have
-not been run locally.
+GitHub step logs/artifacts. GitHub-hosted execution remains unverified; the
+latest local Terraform results are recorded below.
 
-Local PR-check verification passed: pinned Python dependencies and `pip check`,
+Earlier PR-check verification passed: pinned Python dependencies and `pip check`,
 clean cached `npm ci`, 94 pytest tests, 20 frontend tests, lint, production build,
-and one Playwright Chromium flow. The Terraform helper reports the expected skip;
-its registration/lock/path discovery policies were checked using temporary local
-fixtures without invoking Terraform. No Terraform configuration or CLI exists
-here, so fmt/init/validate remain unrun. The upstream HTTPX warning remains.
+and one Playwright Chromium flow. At that earlier increment Terraform discovery
+skipped because no configurations existed. The new infrastructure check results
+are recorded below. The upstream HTTPX warning remains.
+
+## Person 2 application infrastructure (November 10)
+
+`infra/challenge1` is a child module of the existing `infra/environments/dev`
+root: Python 3.14 x86_64 Lambda/Mangum, HTTP API, three matching on-demand
+DynamoDB tables, private frontend S3, CloudFront/OAC, seven-day logs and six
+non-secret SSM parameters. Shared backend/bootstrap/IAM permissions are unchanged.
+The execution role has logs only in mock mode; explicit DynamoDB mode adds only
+Query on these tables. Configuration goes directly into Lambda's environment
+and is also published to SSM, with no runtime SSM lookup. No startup seeding.
+
+The public API/SPA contracts remain unchanged. Gateway-only CORS allows the
+CloudFront origin and local port-5173 origins. Build Vite using the HTTPS API
+base output, without `/api`; the Vite proxy remains local-only. Forecast and
+assistant remain clearly labeled illustrative/placeholder features.
+
+See [application-infrastructure.md](application-infrastructure.md) for the resource
+tour, exact PowerShell/Linux checks and later-only deployment commands, config
+inputs/outputs, cache rules, billable categories and integration limits. Build
+the ZIP before any future plan. The existing CI now builds and tests the actual
+Linux artifact offline; Windows can build but cannot execute its native library.
+Shared deployment-role trust/permission hardening is recommended, not a technical
+blocker. The current broad role and main/PR trust are deliberately retained; see
+[the recorded foundation decision](foundation-handoff.md#current-permission-decision).
+Ordinary PR checks remain credential-free and deployment automation is not enabled.
+
+Local verification: **103 API tests**, **20 frontend tests**, lint, build and
+**one Playwright smoke flow** passed; `pip check` passed. The Linux-targeted ZIP
+built with a cp314 x86_64 pydantic-core ELF library. Terraform **1.17.0** fmt,
+backend-disabled init with readonly provider locks and validate passed for
+bootstrap/dev, including both child modules. A portable CLI was downloaded into
+ignored `.qa` without global changes. Provider selections were not changed.
+Actual Linux ZIP execution/CI remains unrun locally (Windows; no running Docker
+daemon). Validation is not an AWS plan: live IAM, quotas, runtime, CORS and
+CloudFront delivery require later authorized AWS checks. No AWS API calls,
+plan/apply, seeding, uploads, invalidations, commits or pushes were performed.
+
+## Foundation handoff correction (November 11)
+
+The teammate's PR description, supplied after the application increment, confirms
+that bootstrap was already applied from his laptop and provides the deployment
+role ARN, Region and dev state location. These are now preserved in
+[foundation-handoff.md](foundation-handoff.md), linked from the root README and
+deployment guide. The application's existing dev-root wiring already matches
+the handoff, so no Terraform resource, backend, UI or API change was needed.
+The bootstrap header now explicitly says it was already applied and points to
+the state owner; shared IAM code and provider locks are unchanged.
+
+The foundation role can continue to be used as designed, subject to its broad
+permissions and PR trust. Hardening is an improvement, not an absolute technical
+requirement. The teammate's OIDC job settings are documented for later use, not
+enabled in ordinary checks. AGENTS.md now requires persistent Markdown records
+for substantial changes/teammate handoffs, alongside a junior-friendly chat report.
+No AWS service or state access was used to verify the reported deployment status.
+
+Verification for this correction: Terraform 1.17.0 formatting and validation
+passed for bootstrap/dev, root discovery passed, foundation identifiers/trust
+subjects matched the existing configuration, and 20 local Markdown links plus
+`git diff --check` passed. Only Markdown and a bootstrap explanatory comment
+changed; application tests were not rerun. No AWS authentication, state access,
+deployment, commit or push occurred.
+
+## Deployment pipeline preparation (November 11)
+
+The repository now has an explicitly activated main deployment pipeline and
+optional AWS PR planning. See [deployment-pipeline.md](deployment-pipeline.md)
+for exact setup, configuration names, resource costs, readiness evidence,
+first-run behavior, blockers and recovery; the root README links to it.
+
+`demo-checks.yml` is reused, not copied. It runs tests/build/local smoke and
+offline Terraform checks without credentials, and can pass the tested Linux ZIP
+to the main job in the same run. `deploy-main.yml` uses OIDC only after those
+checks, verifies the account, plans/applies the same saved dev-root plan, builds
+Vite using the API output, uploads hashed assets before HTML, invalidates only
+changed entry HTML, and checks the actual HTTPS site/API/CORS with Playwright.
+Its workflow-level concurrency never cancels an active apply. Activation is
+off unless a maintainer sets repository variable `DEPLOY_ENABLED=true`.
+
+`aws-pr-plan.yml` reports pending unless a trusted same-repository PR has the
+`aws-plan` label and an owner-approved separate read-only planning role is
+configured via `AWS_PR_PLAN_ENABLED`/`AWS_PR_PLAN_ROLE_ARN`. The broad deployment
+role is not reused under a read-only label. Speculative PR plans never lock/write
+state, apply or upload; optional planning does not block main deployment.
+No shared role/policy, Terraform resource, UI or API behavior changed.
+
+Read-only readiness checks now verify the named state object exists (metadata
+only) and the GitHub role/trust/attached and inline policies match the handoff.
+No state contents were downloaded, and those checks cannot prove GitHub OIDC,
+state resource ownership, effective deployment write access or quotas.
+
+An observed local defect was fixed: cached live backend metadata caused
+`init -backend=false` to attempt a state metadata request (403). The check helper
+now isolates TF_DATA_DIR under ignored build/terraform-checks for each root,
+preserving the user's original cache. A regression test protects this behavior.
+The later isolated init/validate checks passed without reusing that live backend.
+
+Validation: **119 Python tests** (103 API + 16 deployment/helper regressions),
+**20 frontend tests**, lint, production build, **one local browser smoke**,
+`pip check`, actionlint **1.7.12** for all workflows, and Terraform **1.17.0**
+fmt/backend-disabled readonly init/validate for both roots passed. The Linux ZIP
+rebuilt at 20,376,799 bytes with the same SHA256 as before; the deployed browser
+test's collection passed without execution. Linux ZIP execution, GitHub-hosted
+Actions/OIDC/artifact transfer, AWS plans/applies/writes and deployed HTTPS/CORS
+remain unexecuted. No account/repository settings, seed writes, uploads,
+invalidations, commits, merges or pushes were performed from this session.

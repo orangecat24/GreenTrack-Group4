@@ -1,0 +1,87 @@
+name: Optional AWS PR plan
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aws-pr-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    # A maintainer must provision/approve a separate READ-ONLY planning role.
+    # Same-repository branches + explicit label are required; forks never qualify.
+    if: >-
+      vars.AWS_PR_PLAN_ENABLED == 'true' &&
+      vars.AWS_PR_PLAN_ROLE_ARN != '' &&
+      vars.AWS_PR_PLAN_ROLE_ARN != 'arn:aws:iam::886565871385:role/g4-greentrack-github-deploy' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'aws-plan')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TRUSTED_PR_PLAN: 'true'
+      AWS_REGION: eu-central-1
+      AWS_EC2_METADATA_DISABLED: 'true'
+      TF_IN_AUTOMATION: 'true'
+      TF_INPUT: 'false'
+      CHECKPOINT_DISABLE: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - name: Validate planning role configuration
+        env:
+          PLAN_ROLE: ${{ vars.AWS_PR_PLAN_ROLE_ARN }}
+        run: |
+          python -c "import os,re; assert re.fullmatch(r'arn:aws:iam::886565871385:role/g4-[A-Za-z0-9+=,.@_-]+', os.environ['PLAN_ROLE']), 'Use a planning role in the project account.'"
+      - name: Read pinned Terraform version
+        id: terraform
+        run: python scripts/check_terraform.py --discover
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ steps.terraform.outputs.terraform_version }}
+          terraform_wrapper: false
+      - name: Build the artifact needed to calculate the proposed Lambda hash
+        run: python scripts/build_lambda.py
+      - name: Obtain the separately authorized read-only planning session
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_PR_PLAN_ROLE_ARN }}
+          aws-region: eu-central-1
+          allowed-account-ids: '886565871385'
+          unset-current-credentials: true
+          output-credentials: false
+          # Defence in depth; the supplied role must ALSO be read-only in IAM.
+          # A PR can edit workflow code, so this session policy is not a substitute
+          # for account-side restrictions on the planning identity.
+          inline-session-policy: >-
+            {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["sts:GetCallerIdentity","s3:Get*","s3:List*","iam:Get*","iam:List*","dynamodb:Describe*","dynamodb:List*","lambda:Get*","lambda:List*","apigateway:GET","cloudfront:Get*","cloudfront:List*","logs:Describe*","logs:List*","ssm:GetParameter","ssm:ListTagsForResource"],"Resource":"*"},{"Effect":"Deny","Action":"ssm:GetParameter","NotResource":"arn:aws:ssm:eu-central-1:886565871385:parameter/g4-greentrack-dev/api/*"}]}
+      - name: Initialize existing backend with the read-only planning session
+        run: python scripts/deployment.py init --pr
+      - name: Speculative AWS plan without state-lock writes
+        run: python scripts/deployment.py plan --pr
+  summary:
+    needs: plan
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Report the actual planning status
+        env:
+          RESULT: ${{ needs.plan.result }}
+        run: |
+          if [ "$RESULT" = skipped ]; then
+            echo 'AWS plan pending/not configured. Requires explicit opt-in, a separate read-only planning role, a trusted same-repository PR and the aws-plan label. Ordinary validation is not a plan.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf 'AWS speculative plan result: %s. No apply or publication is performed.\n' "$RESULT" >> "$GITHUB_STEP_SUMMARY"
+          fi
