@@ -1,0 +1,15 @@
+Rules = [
+    IsComplete "reading_ts",
+    IsUnique "reading_ts",
+    Completeness "global_active_power_kw" >= 0.95,
+    ColumnValues "global_active_power_kw" >= 0 where "global_active_power_kw is not null",
+    ColumnValues "global_active_power_kw" <= 12 where "global_active_power_kw is not null",
+    ColumnValues "voltage_v" >= 200 where "voltage_v is not null",
+    ColumnValues "voltage_v" <= 260 where "voltage_v is not null",
+    ColumnValues "sub_metering_1_wh" >= 0 where "sub_metering_1_wh is not null",
+    ColumnValues "sub_metering_1_wh" <= 100 where "sub_metering_1_wh is not null",
+    ColumnValues "sub_metering_2_wh" >= 0 where "sub_metering_2_wh is not null",
+    ColumnValues "sub_metering_2_wh" <= 100 where "sub_metering_2_wh is not null",
+    ColumnValues "sub_metering_3_wh" >= 0 where "sub_metering_3_wh is not null",
+    ColumnValues "sub_metering_3_wh" <= 100 where "sub_metering_3_wh is not null"
+]

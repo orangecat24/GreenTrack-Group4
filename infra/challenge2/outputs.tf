@@ -43,6 +43,16 @@ output "silver_job_name" {
   value       = aws_glue_job.silver.name
 }
 
+output "quality_job_name" {
+  description = "Glue job evaluating the DQDL ruleset against the silver table."
+  value       = aws_glue_job.quality.name
+}
+
+output "quality_results_uri" {
+  description = "Data quality evaluation results location."
+  value       = "s3://${aws_s3_bucket.data_lake.bucket}/${local.quality_results_prefix}"
+}
+
 output "glue_pipeline_role_arn" {
   description = "IAM role the Glue pipeline jobs run as."
   value       = aws_iam_role.glue_pipeline.arn
