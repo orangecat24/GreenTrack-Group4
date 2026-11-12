@@ -57,6 +57,7 @@ data "aws_iam_policy_document" "glue_data_lake" {
       "${aws_s3_bucket.data_lake.arn}/silver/*",
       "${aws_s3_bucket.data_lake.arn}/gold/*",
       "${aws_s3_bucket.data_lake.arn}/${local.glue_temp_prefix}*",
+      "${aws_s3_bucket.data_lake.arn}/${local.quality_results_prefix}*",
     ]
   }
 }

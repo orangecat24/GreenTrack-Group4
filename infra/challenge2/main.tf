@@ -19,12 +19,13 @@ locals {
   # the same trick the Terraform state bucket uses.
   bucket_name = "${var.name_prefix}-datalake-${data.aws_caller_identity.current.account_id}"
 
-  raw_prefix            = "raw/"
-  bronze_prefix         = "bronze/"
-  bronze_table_location = "bronze/raw_readings/"
-  scripts_prefix        = "scripts/"
-  glue_temp_prefix      = "glue-temp/"
-  athena_results_prefix = "athena-results/"
+  raw_prefix             = "raw/"
+  bronze_prefix          = "bronze/"
+  bronze_table_location  = "bronze/raw_readings/"
+  scripts_prefix         = "scripts/"
+  glue_temp_prefix       = "glue-temp/"
+  athena_results_prefix  = "athena-results/"
+  quality_results_prefix = "quality-results/"
 
   # Glue database names may not contain dashes, so g4-greentrack-dev
   # becomes g4_greentrack_dev_bronze.
