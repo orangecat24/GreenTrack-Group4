@@ -83,9 +83,6 @@ resource "aws_glue_job" "bronze" {
   }
 
   default_arguments = {
-    # Our script's own arguments. raw_key is overridden per run with the
-    # specific uploaded file; the default converts the whole raw/ prefix.
-    "--raw_key"     = ""
     "--raw_path"    = "s3://${aws_s3_bucket.data_lake.bucket}/${local.raw_prefix}"
     "--bronze_path" = "s3://${aws_s3_bucket.data_lake.bucket}/${local.bronze_table_location}"
 

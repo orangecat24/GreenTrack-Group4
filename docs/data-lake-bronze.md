@@ -56,8 +56,8 @@ The apply prints a `data_lake` output with every name teammates need.
 
 1. Upload the committed fixture:
    `aws s3 cp fixtures/raw_sample.csv s3://g4-greentrack-dev-datalake-886565871385/raw/raw_sample.csv`
-2. Run the job for exactly that file:
-   `aws glue start-job-run --job-name g4-greentrack-dev-bronze --arguments '{"--raw_key":"s3://g4-greentrack-dev-datalake-886565871385/raw/raw_sample.csv"}'`
+2. Run the job (it converts the whole `raw/` prefix, one folder per file):
+   `aws glue start-job-run --job-name g4-greentrack-dev-bronze`
 3. Wait for `SUCCEEDED` (`aws glue get-job-run ...`), then query in Athena
    (result location `s3://g4-greentrack-dev-datalake-886565871385/athena-results/`):
 
