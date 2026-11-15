@@ -68,6 +68,11 @@ output "quality_results_uri" {
   value       = "s3://${aws_s3_bucket.data_lake.bucket}/${local.quality_results_prefix}"
 }
 
+output "pipeline_workflow_name" {
+  description = "Glue workflow running bronze, silver, quality and gold on raw/ uploads."
+  value       = aws_glue_workflow.pipeline.name
+}
+
 output "glue_pipeline_role_arn" {
   description = "IAM role the Glue pipeline jobs run as."
   value       = aws_iam_role.glue_pipeline.arn

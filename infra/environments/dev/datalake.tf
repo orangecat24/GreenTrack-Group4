@@ -29,6 +29,7 @@ output "data_lake" {
     gold_job_name          = module.challenge2.gold_job_name
     quality_job_name       = module.challenge2.quality_job_name
     quality_results_uri    = module.challenge2.quality_results_uri
+    pipeline_workflow_name = module.challenge2.pipeline_workflow_name
     glue_pipeline_role_arn = module.challenge2.glue_pipeline_role_arn
   }
 }
