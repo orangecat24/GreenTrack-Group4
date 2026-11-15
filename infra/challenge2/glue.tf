@@ -27,7 +27,7 @@ resource "aws_glue_catalog_table" "raw_readings" {
     output_format = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat"
 
     ser_de_info {
-      serialization_library = "org.apache.hadoop.hive.serde2.parquet.ParquetHiveSerDe"
+      serialization_library = "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
     }
 
     # The seven value columns stay text on purpose: bronze preserves "?" and

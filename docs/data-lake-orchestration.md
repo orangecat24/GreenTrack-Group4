@@ -59,6 +59,15 @@ job's `SUCCEEDED` state in this workflow (EventBridge exposes Glue job state
 changes); the exact hookup is agreed in P2 06. Person 3 reads the available
 data period from `gold.hourly_consumption` bounds.
 
-## Status
+## Verified results (2026-11-15, applied and run in AWS)
 
-Written and validated offline; no AWS run yet.
+- Uploading `fixtures/raw_sample.csv` to `raw/` started the workflow
+  automatically through EventBridge; no manual step was involved.
+- Final clean run `wr_aa76105ad6ff62732949147587537a54d5e21c3ae8d261bcc9dd09b43982f62f`
+  completed with **4/4 succeeded actions** (bronze, silver, quality, gold).
+- Retry evidence: this was a re-upload of an already-processed file, and gold
+  totals were unchanged afterwards (3 hourly rows, 2.3223 kWh) — no
+  duplicated observations, no doubled totals.
+- Failure visibility: earlier runs with intentionally broken configurations
+  stopped at the failing job, visible in the workflow graph with the error
+  message on the job run; downstream jobs never started.

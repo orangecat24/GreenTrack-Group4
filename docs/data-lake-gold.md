@@ -75,6 +75,17 @@ daily totals between silver (manual SQL aggregation) and the gold tables.
 - Role access: granted in P1 08 (Lake Formation) once Person 2 and Person 3
   provide their runtime role ARNs.
 
-## Status
+## Verified results (2026-11-15, applied and run in AWS)
 
-Written and validated offline; no AWS run yet.
+Athena returned values identical to the independently calculated
+[fixtures/expected_hourly.csv](../fixtures/expected_hourly.csv):
+
+| period_start | energy_kwh | kitchen | laundry | heater_ac | other | minutes | complete |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 2006-12-21 10:00 | 1.7677 | 0.569 | 0.031 | 0.89 | 0.2777 | 60 | true |
+| 2006-12-21 11:00 | 0.516833 | 0.0 | 0.0 | 0.0 | 0.516833 | 58 | false |
+| 2006-12-21 12:00 | 0.037767 | 0.0 | 0.0 | 0.0 | 0.037767 | 10 | false |
+
+`daily_consumption`: 2.3223 kWh over 128 minutes, `is_complete=false`.
+`daily_peak`: peak hour 10:00 at 1.7677 kWh, max minute power 3.728 kW —
+all matching the contract's hand calculations.

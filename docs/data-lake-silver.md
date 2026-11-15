@@ -61,8 +61,15 @@ Prerequisite: the bronze fixture run from
    [fixtures/expected_hourly.csv](../fixtures/expected_hourly.csv) coverage:
    hour 10 has 60 minutes, hour 11 has 58, hour 12 has 10.
 
-Record observed results here or in the PR when the run is performed; as of
-this commit the job is written and validated offline, **no AWS run yet**.
+## Verified results (2026-11-15, applied and run in AWS)
+
+- `count(*)` returned **130**: the fixture's duplicate 10:30 row collapsed to
+  one survivor.
+- The 11:23 and 11:24 rows returned **NULL** for `global_active_power_kw` and
+  `sub_metering_3_wh` — missing values stayed null, not zero.
+- Exactly one row exists at 10:30.
+- Fix found during the live run: Spark needs
+  `recursiveFileLookup=true` to read bronze's per-source-file subfolders.
 
 ## Handoff notes
 
