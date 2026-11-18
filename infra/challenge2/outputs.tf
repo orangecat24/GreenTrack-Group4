@@ -43,6 +43,21 @@ output "silver_job_name" {
   value       = aws_glue_job.silver.name
 }
 
+output "gold_database_name" {
+  description = "Glue catalog database for the gold layer."
+  value       = aws_glue_catalog_database.gold.name
+}
+
+output "gold_table_names" {
+  description = "Iceberg gold tables; created by the gold job's first run."
+  value       = ["hourly_consumption", "daily_consumption", "daily_peak"]
+}
+
+output "gold_job_name" {
+  description = "Glue job building the gold summaries from silver."
+  value       = aws_glue_job.gold.name
+}
+
 output "quality_job_name" {
   description = "Glue job evaluating the DQDL ruleset against the silver table."
   value       = aws_glue_job.quality.name
@@ -51,6 +66,11 @@ output "quality_job_name" {
 output "quality_results_uri" {
   description = "Data quality evaluation results location."
   value       = "s3://${aws_s3_bucket.data_lake.bucket}/${local.quality_results_prefix}"
+}
+
+output "pipeline_workflow_name" {
+  description = "Glue workflow running bronze, silver, quality and gold on raw/ uploads."
+  value       = aws_glue_workflow.pipeline.name
 }
 
 output "glue_pipeline_role_arn" {

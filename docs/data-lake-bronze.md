@@ -56,8 +56,8 @@ The apply prints a `data_lake` output with every name teammates need.
 
 1. Upload the committed fixture:
    `aws s3 cp fixtures/raw_sample.csv s3://g4-greentrack-dev-datalake-886565871385/raw/raw_sample.csv`
-2. Run the job for exactly that file:
-   `aws glue start-job-run --job-name g4-greentrack-dev-bronze --arguments '{"--raw_key":"s3://g4-greentrack-dev-datalake-886565871385/raw/raw_sample.csv"}'`
+2. Run the job (it converts the whole `raw/` prefix, one folder per file):
+   `aws glue start-job-run --job-name g4-greentrack-dev-bronze`
 3. Wait for `SUCCEEDED` (`aws glue get-job-run ...`), then query in Athena
    (result location `s3://g4-greentrack-dev-datalake-886565871385/athena-results/`):
 
@@ -76,9 +76,16 @@ The apply prints a `data_lake` output with every name teammates need.
 5. Only after the fixture passes, upload the full
    `household_power_consumption.csv` the same way and expect 2,075,259 rows.
 
-Record the observed counts in the PR or in this document when the run is
-performed; as of this commit the module is written and validated offline, but
-**no AWS apply or job run has been performed yet**.
+## Verified results (2026-11-15, applied and run in AWS)
+
+- `SELECT count(*)` on `g4_greentrack_dev_bronze.raw_readings` returned
+  **131** (130 fixture rows + the fake duplicate, preserved as received).
+- The 11:23 row returned `global_active_power = '?'`,
+  `source_file = 'raw_sample.csv'` and a populated `load_ts`, proving the
+  missing marker survives and every row traces to its upload.
+- Fixes found during the live run: the per-file `--raw_key` argument was
+  removed (Glue passes empty defaults as bare flags) and the table SerDe was
+  corrected to `org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe`.
 
 ## Handoff to Persons 2 and 3
 

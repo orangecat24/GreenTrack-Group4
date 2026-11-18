@@ -7,6 +7,7 @@ module "challenge2" {
   name_prefix             = "g4-greentrack-dev"
   bronze_job_script_path  = abspath("${path.module}/../../../data/glue/bronze_job.py")
   silver_job_script_path  = abspath("${path.module}/../../../data/glue/silver_job.py")
+  gold_job_script_path    = abspath("${path.module}/../../../data/glue/gold_job.py")
   quality_job_script_path = abspath("${path.module}/../../../data/glue/quality_job.py")
   quality_ruleset_path    = abspath("${path.module}/../../../data/quality/silver_readings.dqdl")
 }
@@ -23,8 +24,12 @@ output "data_lake" {
     silver_database_name   = module.challenge2.silver_database_name
     silver_table_name      = module.challenge2.silver_table_name
     silver_job_name        = module.challenge2.silver_job_name
+    gold_database_name     = module.challenge2.gold_database_name
+    gold_table_names       = module.challenge2.gold_table_names
+    gold_job_name          = module.challenge2.gold_job_name
     quality_job_name       = module.challenge2.quality_job_name
     quality_results_uri    = module.challenge2.quality_results_uri
+    pipeline_workflow_name = module.challenge2.pipeline_workflow_name
     glue_pipeline_role_arn = module.challenge2.glue_pipeline_role_arn
   }
 }

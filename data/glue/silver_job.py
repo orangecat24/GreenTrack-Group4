@@ -98,7 +98,9 @@ def main() -> None:
     job = Job(glue_context)
     job.init(args["JOB_NAME"], args)
 
-    bronze = spark.read.parquet(args["bronze_path"])
+    bronze = (
+        spark.read.option("recursiveFileLookup", "true").parquet(args["bronze_path"])
+    )
     input_rows = bronze.count()
     print(f"Bronze input rows: {input_rows}")
 

@@ -17,6 +17,11 @@ variable "silver_job_script_path" {
   type        = string
 }
 
+variable "gold_job_script_path" {
+  description = "Absolute path to data/glue/gold_job.py."
+  type        = string
+}
+
 variable "quality_job_script_path" {
   description = "Absolute path to data/glue/quality_job.py."
   type        = string

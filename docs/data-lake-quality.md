@@ -61,7 +61,12 @@ Expect `SUCCEEDED` and all 13 rules `Passed` in the run log and in
 This repair path is also the usable-data policy: bad readings are corrected by
 re-uploading the affected minutes, never by editing tables by hand.
 
-## Status
+## Verified results (2026-11-15, applied and run in AWS)
 
-Written and validated offline; no AWS run yet. Record observed pass/fail run
-IDs here or in the PR when executed.
+- All 13 rules returned `Passed` on the 130-row silver fixture; results were
+  published to `quality-results/` and the Glue Data Quality console.
+- Fix found during the live run: the DQDL parser rejects carriage returns, so
+  the job normalizes CRLF when loading the ruleset and `.gitattributes` pins
+  `.dqdl` files to LF.
+- The intentional-failure and repair demo (`raw_quality_fail.csv` /
+  `raw_quality_fix.csv`) is still to be recorded.

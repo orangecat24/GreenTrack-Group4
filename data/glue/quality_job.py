@@ -36,7 +36,7 @@ def iceberg_conf(warehouse_path: str) -> SparkConf:
 
 def load_ruleset(bucket: str, key: str) -> str:
     response = boto3.client("s3").get_object(Bucket=bucket, Key=key)
-    return response["Body"].read().decode("utf-8")
+    return response["Body"].read().decode("utf-8").replace("\r\n", "\n")
 
 
 def main() -> None:

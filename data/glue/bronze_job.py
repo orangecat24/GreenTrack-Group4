@@ -10,11 +10,12 @@ What this job does (and deliberately does NOT do):
     retry can never duplicate rows.
   - No cleaning, no type casting, no deduplication. That is silver's job.
 
-Arguments (all provided by Terraform's default_arguments; raw_key is
-overridden per run to convert one specific upload):
-  --raw_key      full s3://bucket/raw/... URI of ONE file, or "" for all files
-  --raw_path     s3://bucket/raw/ landing prefix (used when raw_key is "")
+Arguments (provided by Terraform's default_arguments):
+  --raw_path     s3://bucket/raw/ landing prefix
   --bronze_path  s3://bucket/bronze/raw_readings/ table location
+
+The job always converts the whole raw/ prefix; per-file folders with
+overwrite keep that idempotent, so no per-run file argument is needed.
 """
 
 import re
@@ -56,9 +57,7 @@ def folder_name_for(source_file: str) -> str:
 
 
 def main() -> None:
-    args = getResolvedOptions(
-        sys.argv, ["JOB_NAME", "raw_key", "raw_path", "bronze_path"]
-    )
+    args = getResolvedOptions(sys.argv, ["JOB_NAME", "raw_path", "bronze_path"])
 
     spark_context = SparkContext()
     glue_context = GlueContext(spark_context)
@@ -66,8 +65,7 @@ def main() -> None:
     job = Job(glue_context)
     job.init(args["JOB_NAME"], args)
 
-    # One specific upload, or (fallback) everything in the landing prefix.
-    input_path = args["raw_key"] or args["raw_path"]
+    input_path = args["raw_path"]
     print(f"Reading raw CSV from {input_path}")
 
     schema = StructType(
