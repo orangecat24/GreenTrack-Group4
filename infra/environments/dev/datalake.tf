@@ -10,6 +10,13 @@ module "challenge2" {
   gold_job_script_path    = abspath("${path.module}/../../../data/glue/gold_job.py")
   quality_job_script_path = abspath("${path.module}/../../../data/glue/quality_job.py")
   quality_ruleset_path    = abspath("${path.module}/../../../data/quality/silver_readings.dqdl")
+  consumer_role_arns      = var.gold_consumer_role_arns
+}
+
+variable "gold_consumer_role_arns" {
+  description = "Teammate role ARNs that should read gold tables. Collect from Persons 2 and 3 and set through a reviewed Terraform change."
+  type        = list(string)
+  default     = []
 }
 
 output "data_lake" {

@@ -89,3 +89,40 @@ Athena returned values identical to the independently calculated
 `daily_consumption`: 2.3223 kWh over 128 minutes, `is_complete=false`.
 `daily_peak`: peak hour 10:00 at 1.7677 kWh, max minute power 3.728 kW —
 all matching the contract's hand calculations.
+
+### Verified results (2026-11-19, full UCI dataset)
+
+Full workflow run
+`wr_b38a9cb412c00d3720d0ecf9b6b47761b138b9a217fdad07661e2fe2b79b5721`
+processed `household_power_consumption.csv` (2,075,259 rows) end to end.
+
+- `g4_greentrack_dev_silver.readings`: 2,075,259 rows with 2,075,259 distinct
+  timestamps, spanning `2006-12-16 17:24` to `2010-11-26 21:02`.
+- `g4_greentrack_dev_gold.hourly_consumption`: **34,589 rows** covering the
+  same span (~48 months × ~720 hours).
+- Fixture hours still reconcile: 2006-12-21 10:00 = 1.7677 kWh (complete);
+  11:00 = 0.516833 kWh (58 min); the 12:00 hour grew to 0.819133 kWh (full
+  60 min) because the full dataset supplied the minutes the fixture lacked.
+- Demo week 2009-06-01 to 2009-06-07 (all complete days):
+
+  | day | daily_kwh | peak_hour | peak_kwh | max_minute_power_kw |
+  | --- | --- | --- | --- | --- |
+  | 2009-06-01 | 24.054 | 12:00 | 2.512 | 5.322 |
+  | 2009-06-02 | 18.177 | 08:00 | 1.664 | 2.992 |
+  | 2009-06-03 | 22.610 | 08:00 | 2.058 | 4.262 |
+  | 2009-06-04 | 17.261 | 08:00 | 1.826 | 4.892 |
+  | 2009-06-05 | 20.506 | 07:00 | 1.597 | 4.190 |
+  | 2009-06-06 | 24.591 | 19:00 | 2.556 | 6.282 |
+  | 2009-06-07 | 20.123 | 13:00 | 3.455 | 8.760 |
+
+## Gold handoff package (ready for Persons 2 and 3)
+
+- Catalog: `g4_greentrack_dev_gold`; three Iceberg tables listed above.
+- S3 locations: `s3://g4-greentrack-dev-datalake-886565871385/gold/`.
+- Schema version: v1 as in [contracts/data.md](../contracts/data.md).
+- Quality policy: gold is rebuilt only after silver passes the DQDL ruleset
+  (enforced by the Glue workflow; see
+  [data-lake-orchestration.md](data-lake-orchestration.md)).
+- Role access: granted through
+  [data-lake-lake-formation.md](data-lake-lake-formation.md)'s
+  `gold_consumer_role_arns` variable once teammate ARNs land.

@@ -68,5 +68,21 @@ re-uploading the affected minutes, never by editing tables by hand.
 - Fix found during the live run: the DQDL parser rejects carriage returns, so
   the job normalizes CRLF when loading the ruleset and `.gitattributes` pins
   `.dqdl` files to LF.
-- The intentional-failure and repair demo (`raw_quality_fail.csv` /
-  `raw_quality_fix.csv`) is still to be recorded.
+### Live failure and repair demo (2026-11-19)
+
+- Uploading `fixtures/raw_quality_fail.csv` to `raw/` triggered pipeline run
+  `wr_6352b9dd72dd27b9530db928432f3327eabd866707f1bf557eef107bc56e28b1`.
+  Bronze and silver succeeded (silver merged the bad 2026-12-22 rows), then
+  the quality job failed with the following CloudWatch error, naming the
+  broken rules and their offending values:
+
+  > Data quality failed on 5 rule(s):
+  > `global_active_power_kw >= 0` (-1.0), `<= 12` (15.3),
+  > `voltage_v >= 200` (180.0), `<= 260` (300.5),
+  > `sub_metering_2_wh <= 100` (110.0)
+
+  The workflow stopped at quality and gold was not rebuilt, as required by
+  the failure policy.
+- Uploading `fixtures/raw_quality_fix.csv` triggered the next workflow run.
+  The silver MERGE replaced the bad 2026-12-22 rows with the fix values
+  (newer `load_ts` wins), quality passed, and gold was rebuilt.

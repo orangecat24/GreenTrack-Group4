@@ -32,6 +32,25 @@ variable "quality_ruleset_path" {
   type        = string
 }
 
+variable "consumer_role_arns" {
+  description = "Role ARNs that may read gold tables through Lake Formation (application, SageMaker, assistant tools)."
+  type        = list(string)
+  default     = []
+  validation {
+    condition = alltrue([
+      for arn in var.consumer_role_arns :
+      can(regex("^arn:aws:iam::886565871385:role/g4-[A-Za-z0-9+=,.@_-]+$", arn))
+    ])
+    error_message = "Only g4- prefixed roles in this account are accepted as gold consumers."
+  }
+}
+
+variable "lake_formation_extra_admins" {
+  description = "Additional IAM principal ARNs to grant Lake Formation data lake administrator rights."
+  type        = list(string)
+  default     = []
+}
+
 variable "tags" {
   description = "Additional data lake tags; the inherited provider also supplies group/project/dev tags."
   type        = map(string)
