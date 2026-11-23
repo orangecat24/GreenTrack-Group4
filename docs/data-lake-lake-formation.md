@@ -31,25 +31,27 @@ already exist in IAM; a grant on a missing principal fails apply with
 
 Activation procedure, once a role has actually been deployed:
 
-1. Confirm the role exists:
-   `aws iam get-role --role-name <name>` returns 0.
-2. Add it to `infra/environments/dev/terraform.tfvars` (committed; ARNs are
-   not secrets). See
-   [terraform.tfvars.example](../infra/environments/dev/terraform.tfvars.example)
-   for the format and the already-delivered Person 2 API role.
+1. Confirm the role exists: `aws iam get-role --role-name <name>` returns 0.
+2. Add its ARN to the `gold_consumer_role_arns` default list in
+   [infra/environments/dev/datalake.tf](../infra/environments/dev/datalake.tf)
+   through a reviewed pull request. ARNs are not secrets; the module
+   validator refuses anything that isn't a `g4-` prefixed role in this
+   account.
 3. `terraform apply -target=module.challenge2.aws_lakeformation_permissions.consumer_gold_database`
    and the matching `consumer_gold_tables` resource.
 
 The module validates that only `g4-` prefixed roles in this account are
 accepted, which prevents cross-group grants by accident.
 
-### Known ARNs received so far
+### Known ARNs
 
-- Person 2: `arn:aws:iam::886565871385:role/g4-greentrack-dev-api-execution`
-  — read-only consumer for `/consumption`, `/anomalies`, `/forecast`.
-  Grant is prepared in `terraform.tfvars.example` but **not applied**: the
-  role must exist in AWS first (Person 2's `module.challenge1` deployment
-  is pending verification).
+- `arn:aws:iam::886565871385:role/g4-greentrack-dev-sagemaker-execution` —
+  **granted and verified** (2026-11-19). `aws lakeformation list-permissions`
+  returns `SELECT`, `DESCRIBE` on `g4_greentrack_dev_gold.*`.
+- `arn:aws:iam::886565871385:role/g4-greentrack-dev-api-execution` — Person 2
+  published this ARN but has not yet applied `module.challenge1` in AWS.
+  Add it to `gold_consumer_role_arns` **after** Person 2 confirms the role
+  exists, otherwise apply will fail with `InvalidPrincipal`.
 
 ### Why S3 location registration is deferred
 

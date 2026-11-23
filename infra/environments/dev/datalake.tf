@@ -14,9 +14,11 @@ module "challenge2" {
 }
 
 variable "gold_consumer_role_arns" {
-  description = "Teammate role ARNs that should read gold tables. Must already exist in IAM when apply runs or Lake Formation fails with InvalidPrincipal. See terraform.tfvars.example."
+  description = "Teammate role ARNs that should read gold tables. Must already exist in IAM when apply runs or Lake Formation fails with InvalidPrincipal."
   type        = list(string)
-  default     = []
+  default = [
+    "arn:aws:iam::886565871385:role/g4-greentrack-dev-sagemaker-execution",
+  ]
 }
 
 output "data_lake" {

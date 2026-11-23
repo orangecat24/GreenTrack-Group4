@@ -37,18 +37,28 @@ module.challenge3.artifacts_prefix
 ```
 
 Person 3's P3 07 model package should include processing, training,
-evaluation and inference entry points plus payload fixtures. P1 10 then:
+evaluation and inference entry points plus payload fixtures. When that lands,
+P1 10 proceeds as follows:
 
-1. Uploads P3's entry points under `ml/scripts/`.
-2. Builds the pipeline definition JSON with the SageMaker Python SDK (we only
-   track the JSON in the repository to keep the pipeline resource managed by
-   Terraform through `aws_sagemaker_pipeline`).
-3. Adds `aws_sagemaker_pipeline`, `aws_sagemaker_model`, and
-   `aws_sagemaker_endpoint_configuration` + `aws_sagemaker_endpoint` for the
-   approved versions.
+1. Copy [ml/pipeline.json.example](../ml/pipeline.json.example) to
+   `ml/pipeline.json` and set Person 3's script filenames, hyperparameters
+   and their chosen training/inference images.
+2. Upload Person 3's entry points under
+   `s3://g4-greentrack-dev-datalake-886565871385/ml/scripts/`.
+3. Generate the pipeline JSON Terraform will manage:
+   `python scripts/build_pipeline_definition.py --config ml/pipeline.json --output infra/challenge3/pipeline_definition.json`.
+4. Add `aws_sagemaker_pipeline` to [infra/challenge3](../infra/challenge3),
+   sourcing the JSON above. Terraform remains the single source of
+   infrastructure truth.
+5. After the pipeline runs and a registered model version is approved in
+   the Model Registry, add `aws_sagemaker_model`,
+   `aws_sagemaker_endpoint_configuration` and `aws_sagemaker_endpoint` for
+   each approved package, and publish the serving-ready handoff.
 
-That incremental PR is intentionally not part of this one, because any value
-chosen for Person 3's scripts or payloads would be a guess today.
+The helper script and example config are committed now so the model-package
+arrival is a straight drop-in. The actual pipeline and endpoint resources
+are intentionally deferred: their values depend on Person 3's chosen images,
+container entry points and payload shapes, which would be guesses today.
 
 ## Status (2026-11-19)
 
