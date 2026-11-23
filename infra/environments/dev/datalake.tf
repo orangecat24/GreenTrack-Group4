@@ -14,7 +14,7 @@ module "challenge2" {
 }
 
 variable "gold_consumer_role_arns" {
-  description = "Teammate role ARNs that should read gold tables. Collect from Persons 2 and 3 and set through a reviewed Terraform change."
+  description = "Teammate role ARNs that should read gold tables. Must already exist in IAM when apply runs or Lake Formation fails with InvalidPrincipal. See terraform.tfvars.example."
   type        = list(string)
   default     = []
 }

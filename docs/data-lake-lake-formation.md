@@ -18,30 +18,38 @@ adds:
 
 ### Collect the ARNs from your teammates
 
-Before applying this module to grant real consumer access, Person 2 and
-Person 3 must publish their runtime role ARNs through their own Terraform
-outputs. Expected pattern (ARNs validated by the module variable):
+The module's `consumer_role_arns` variable only accepts role ARNs that
+already exist in IAM; a grant on a missing principal fails apply with
+`InvalidPrincipal`. Expected roles:
 
-- Person 2 application / loader runtime role
-- Person 2 model-invocation Lambda role
-- Person 3 assistant query role
-- `${var.name_prefix}-sagemaker-execution` (owned by this project,
-  [infra/challenge3](../infra/challenge3))
+| Role | Owner | Status (2026-11-19) |
+| --- | --- | --- |
+| `g4-greentrack-dev-sagemaker-execution` | Person 1 (infra/challenge3) | applied, exists |
+| `g4-greentrack-dev-api-execution` | Person 2 (infra/challenge1) | ARN delivered; Terraform written but **not yet applied in AWS** |
+| inference / gold-loader runtime role | Person 2 | ARN pending (not yet implemented) |
+| assistant tool / query role | Person 3 (infra/challenge4) | ARN pending |
 
-Set them on the dev root through
-`gold_consumer_role_arns`:
+Activation procedure, once a role has actually been deployed:
 
-```hcl
-# infra/environments/dev/terraform.tfvars (not committed; or pass via -var)
-gold_consumer_role_arns = [
-  "arn:aws:iam::886565871385:role/g4-greentrack-dev-sagemaker-execution",
-  "arn:aws:iam::886565871385:role/g4-greentrack-dev-app-runtime",
-  "arn:aws:iam::886565871385:role/g4-greentrack-dev-assistant-tool",
-]
-```
+1. Confirm the role exists:
+   `aws iam get-role --role-name <name>` returns 0.
+2. Add it to `infra/environments/dev/terraform.tfvars` (committed; ARNs are
+   not secrets). See
+   [terraform.tfvars.example](../infra/environments/dev/terraform.tfvars.example)
+   for the format and the already-delivered Person 2 API role.
+3. `terraform apply -target=module.challenge2.aws_lakeformation_permissions.consumer_gold_database`
+   and the matching `consumer_gold_tables` resource.
 
 The module validates that only `g4-` prefixed roles in this account are
 accepted, which prevents cross-group grants by accident.
+
+### Known ARNs received so far
+
+- Person 2: `arn:aws:iam::886565871385:role/g4-greentrack-dev-api-execution`
+  — read-only consumer for `/consumption`, `/anomalies`, `/forecast`.
+  Grant is prepared in `terraform.tfvars.example` but **not applied**: the
+  role must exist in AWS first (Person 2's `module.challenge1` deployment
+  is pending verification).
 
 ### Why S3 location registration is deferred
 
