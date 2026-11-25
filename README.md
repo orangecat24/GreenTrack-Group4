@@ -3,6 +3,12 @@
 GreenTrack student demo: FastAPI, React/TypeScript/Vite and Terraform.
 
 - [Person 2 handoff and local API commands](docs/person2-handoff.md)
+- Person 3 P3 01 drafts and review handoff
+  - [Model and inference contracts](contracts/models.md)
+  - [Assistant and weekly-summary contract](contracts/assistant.md)
+  - [Synthetic fixtures, offline checks, and teammate review](fixtures/person3/README.md)
+- [Person 3 P3 02 query tools and teammate handoff](assistant/README.md)
+- [Person 3 P3 03 standalone assistant, Lambda, and teammate handoff](docs/person3-handoff.md)
 - [Frontend startup and tests](web/README.md)
 - [Existing AWS foundation and teammate handoff](docs/foundation-handoff.md)
 - [Application infrastructure, packaging and later deployment](docs/application-infrastructure.md)

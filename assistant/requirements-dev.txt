@@ -1,0 +1,2 @@
+# Reuse the runtime pins and HTTP test client.
+-r ../api/requirements-dev.txt

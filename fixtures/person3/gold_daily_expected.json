@@ -1,0 +1,41 @@
+{
+  "is_synthetic": true,
+  "window": {
+    "start": "2009-06-01T00:00:00Z",
+    "end": "2009-06-02T00:00:00Z"
+  },
+  "daily_consumption": [
+    {
+      "household_id": "household-1",
+      "period_start": "2009-06-01T00:00:00Z",
+      "energy_kwh": 9.75,
+      "kitchen_kwh": 1.95,
+      "laundry_kwh": 1.05,
+      "heater_ac_kwh": 2.25,
+      "other_kwh": 4.5,
+      "minutes_with_data": 210,
+      "is_complete": false,
+      "year": 2009,
+      "month": 6
+    }
+  ],
+  "daily_peak": [
+    {
+      "household_id": "household-1",
+      "day": "2009-06-01",
+      "peak_hour_start": "2009-06-01T05:00:00Z",
+      "peak_hour_kwh": 7.5,
+      "max_minute_power_kw": 12,
+      "year": 2009,
+      "month": 6
+    }
+  ],
+  "coverage": {
+    "expected_minutes": 1440,
+    "measured_minutes": 210,
+    "complete_hours": 3,
+    "partial_hours": 1,
+    "all_null_hours": 1,
+    "absent_hours": 19
+  }
+}
