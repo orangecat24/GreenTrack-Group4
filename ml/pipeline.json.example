@@ -1,0 +1,37 @@
+{
+  "pipeline_name": "g4-greentrack-dev-models",
+  "role_arn": "arn:aws:iam::886565871385:role/g4-greentrack-dev-sagemaker-execution",
+  "artifacts_prefix": "s3://g4-greentrack-dev-datalake-886565871385/ml/",
+  "scripts_prefix": "s3://g4-greentrack-dev-datalake-886565871385/ml/scripts/",
+  "forecast_model_package_group": "g4-greentrack-dev-forecast",
+  "anomaly_model_package_group": "g4-greentrack-dev-anomaly",
+  "steps": {
+    "processing": {
+      "script": "processing.py",
+      "instance": "ml.m5.large"
+    },
+    "forecast_training": {
+      "script": "train_forecast.py",
+      "instance": "ml.m5.large",
+      "image": "492215442770.dkr.ecr.eu-central-1.amazonaws.com/sagemaker-xgboost:1.7-1",
+      "hyperparameters": {
+        "objective": "reg:squarederror",
+        "num_round": "100",
+        "max_depth": "6"
+      }
+    },
+    "anomaly_training": {
+      "script": "train_anomaly.py",
+      "instance": "ml.m5.large",
+      "image": "664544806723.dkr.ecr.eu-central-1.amazonaws.com/randomcutforest:1",
+      "hyperparameters": {
+        "num_trees": "100",
+        "num_samples_per_tree": "256"
+      }
+    },
+    "evaluation": {
+      "script": "evaluate.py",
+      "instance": "ml.m5.large"
+    }
+  }
+}

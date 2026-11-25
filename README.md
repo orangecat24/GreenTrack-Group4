@@ -13,6 +13,11 @@ GreenTrack student demo: FastAPI, React/TypeScript/Vite and Terraform.
 - [Data quality checks on silver (Challenge 2)](docs/data-lake-quality.md)
 - [Gold layer: business summaries (Challenge 2)](docs/data-lake-gold.md)
 - [Pipeline orchestration on upload (Challenge 2)](docs/data-lake-orchestration.md)
+- [Lake Formation and Iceberg demos (Challenge 2)](docs/data-lake-lake-formation.md)
+- [SageMaker pipeline skeleton (Challenge 3)](docs/sagemaker-skeleton.md)
+- [Gold ready handoff package](docs/gold-handoff.md)
+- [Fresh-environment deployment runbook](docs/deployment-runbook.md)
+- [Person 1 resource inventory and cleanup plan](docs/resource-inventory.md)
 
 The foundation handoff reports that the Terraform state bucket was already
 applied by its owner. Person 2's application is prepared for deployment; local

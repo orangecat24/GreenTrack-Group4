@@ -1,0 +1,3 @@
+gold_consumer_role_arns = [
+  "arn:aws:iam::886565871385:role/g4-greentrack-dev-api-execution",
+]

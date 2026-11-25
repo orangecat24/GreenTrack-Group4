@@ -10,6 +10,15 @@ module "challenge2" {
   gold_job_script_path    = abspath("${path.module}/../../../data/glue/gold_job.py")
   quality_job_script_path = abspath("${path.module}/../../../data/glue/quality_job.py")
   quality_ruleset_path    = abspath("${path.module}/../../../data/quality/silver_readings.dqdl")
+  consumer_role_arns      = var.gold_consumer_role_arns
+}
+
+variable "gold_consumer_role_arns" {
+  description = "Teammate role ARNs that should read gold tables. Must already exist in IAM when apply runs or Lake Formation fails with InvalidPrincipal."
+  type        = list(string)
+  default = [
+    "arn:aws:iam::886565871385:role/g4-greentrack-dev-sagemaker-execution",
+  ]
 }
 
 output "data_lake" {
