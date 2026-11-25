@@ -45,6 +45,21 @@ variable "consumer_role_arns" {
   }
 }
 
+variable "consumer_database_permission_overrides" {
+  description = "Explicit per-consumer database grants to preserve existing approved access; unlisted consumers get DESCRIBE only."
+  type        = map(list(string))
+  default     = {}
+  validation {
+    condition = alltrue([
+      for arn, permissions in var.consumer_database_permission_overrides :
+      contains(var.consumer_role_arns, arn) && length(permissions) > 0 && alltrue([
+        for permission in permissions : contains(["ALL", "ALTER", "CREATE_TABLE", "DESCRIBE", "DROP"], permission)
+      ])
+    ])
+    error_message = "Database permission overrides must name active consumer roles and contain valid, nonempty database permissions."
+  }
+}
+
 variable "lake_formation_extra_admins" {
   description = "Additional IAM principal ARNs to grant Lake Formation data lake administrator rights."
   type        = list(string)

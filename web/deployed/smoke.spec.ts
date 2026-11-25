@@ -13,7 +13,10 @@ test('deployed HTTPS: real browser, public API contract and explicit CORS', asyn
     method: 'OPTIONS',
     headers: { Origin: website, 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'content-type' },
   })
-  expect(preflight.ok()).toBe(true)
+  // Correct CORS headers alone are insufficient: the browser also needs a
+  // successful status. Include the small response body so a routing failure
+  // such as FastAPI's 405 is understandable without opening AWS logs.
+  expect(preflight.ok(), `Chat preflight returned HTTP ${preflight.status()}: ${await preflight.text()}`).toBe(true)
   expect(preflight.headers()['access-control-allow-origin']).toBe(website)
   expect(preflight.headers()['access-control-allow-methods']).toContain('POST')
   expect(preflight.headers()['access-control-allow-headers'].toLowerCase()).toContain('content-type')

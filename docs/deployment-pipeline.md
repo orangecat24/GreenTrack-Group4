@@ -1,5 +1,12 @@
 # Person 2 deployment pipeline: prepared, activation is off by default
 
+**November 25 readiness update:** the dev root now includes Lake Formation
+settings whose admin list depends on the deploying identity. Live metadata shows
+the SSO role is currently the sole LF admin; GitHub uses a different role.
+Review/stabilize that configuration before enabling main auto-apply. The expected
+app resources were absent in today's AWS checks. See [run-the-demo.md](run-the-demo.md)
+for local startup, a reviewed manual first-deployment path and current results.
+
 This prepares GitHub Actions code, not a completed deployment. No plan/apply,
 asset upload, seeding, invalidation, workflow dispatch or repository-setting
 change was performed from the implementation session. The shared IAM role,

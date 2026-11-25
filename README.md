@@ -3,6 +3,7 @@
 GreenTrack student demo: FastAPI, React/TypeScript/Vite and Terraform.
 
 - [Person 2 handoff and local API commands](docs/person2-handoff.md)
+- [Run the current demo locally and deploy/test it safely](docs/run-the-demo.md)
 - [Frontend startup and tests](web/README.md)
 - [Existing AWS foundation and teammate handoff](docs/foundation-handoff.md)
 - [Application infrastructure, packaging and later deployment](docs/application-infrastructure.md)

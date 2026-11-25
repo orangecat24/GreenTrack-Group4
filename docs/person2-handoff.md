@@ -1,5 +1,77 @@
 # Person 2: first mock API increment
 
+Chat CORS plan review (November 25): the user's saved `build/chat-cors.tfplan`
+was inspected locally without another AWS plan or apply. It contains two route
+additions, one route update and one in-place CloudFront origin configuration
+update: **2 add / 2 change / 0 destroy**, with no replacements. The extra origin
+block preserves the same bucket and OAC and uses the documented empty legacy
+identity. All LF/IAM/data-lake resources and Lambda are unchanged; mock remains
+selected. Proceeding with this exact reviewed file is reasonable; its SHA256,
+details and manual commands are in [chat-cors-plan-review.md](chat-cors-plan-review.md).
+The complete deployed browser pass remains pending the user's apply and retest.
+
+Latest live troubleshooting (November 25, 2026): the user reports completing
+manual apply/publication. Independently verified: public health is 200 with
+mock/demo JSON, but chat OPTIONS is 405; live Gateway metadata has correct CORS
+origins and a catch-all `$default` route. The local correction uses explicit
+GET routes and POST /chat, leaving preflight to Gateway. Stage/URLs, UI, API
+schemas, data and IAM are unchanged. The deployed test now reports status/body
+on preflight failure. Terraform fmt/backend-disabled init/readonly locks/validate,
+frontend 20 tests, lint and build passed. No plan/apply/upload was run for this
+correction; the complete deployed smoke is still pending. See
+[run-the-demo.md section 8.6](run-the-demo.md#86-recover-from-chat-preflight-http-405)
+for the new-plan review gate and exact commands. Earlier status entries below
+describe their respective sessions, not the current overall deployment state.
+
+Windows deployment instruction correction (November 25): npm ci reported
+EPERM/unlink for esbuild.exe while the local frontend was still running. The
+guide now requires stopping Vite/Vitest with Ctrl+C before section 7.4, then
+rerunning npm ci in the original deployment terminal. The API may stay running;
+the deployment terminal/variables must be preserved. No process was killed,
+dependency folder deleted or AWS operation run for this documentation fix.
+
+Corrected plan review (November 25, latest): a role-scoped database-permission
+override now preserves the existing SageMaker ALL/DESCRIBE grant. Other consumers
+retain DESCRIBE-only defaults; no live permission change was applied. Terraform
+fmt/validate and a new authorized full-root mock plan passed. The reviewed file
+is build/first-app-preserved-grants.tfplan: **27 additions, 5 identical-content
+script/ruleset uploads, 0 destructions/replacements**. All existing LF grants/admins,
+Glue jobs, data-lake resources and existing roles are no-op. See
+[first-app-plan-review.md](first-app-plan-review.md) for the exact hash/review;
+the run guide selects/checks the new file before applying. The old first-app.tfplan
+remains rejected. No apply, commits or pushes were performed.
+
+First saved-plan review (November 25): **HOLD; do not apply as-is.** See
+[first-app-plan-review.md](first-app-plan-review.md). The plan proposes 27 new app
+resources, five identical-content script/ruleset uploads and replacement of an
+existing SageMaker database grant that removes ALL permission. LF admins and
+the separate gold-table read grant are unchanged. No plan/apply, permission or
+state change was made by the review; a scoped configuration correction and a
+fresh plan are needed before deployment.
+
+Instruction clarification (November 25): run-the-demo.md sections 6-8 now use
+numbered steps with one command per PowerShell box, explicit Enter/wait/browser
+instructions, expected output, error stopping points and a separate plan-review
+gate before apply. All deployment command boxes were syntax-checked without
+execution; no login, plan, apply, upload or cloud test was run for this edit.
+
+Latest startup/deployment guidance: [run-the-demo.md](run-the-demo.md), verified
+November 25 against main `5c024c7`. App resources were absent in AWS metadata
+checks. Local mock mode and its tests pass; completed gold preprocessing is not
+yet connected through a gold-to-DynamoDB loader. ML/assistant remain placeholders.
+The shared dev root's identity-dependent Lake Formation admin list needs review
+before enabling GitHub auto-apply. No Terraform/IAM/runtime code was changed.
+
+Windows verification fix (November 25): user-provided output showed all 119
+Python tests failing during tmp_path setup because the shared Windows pytest
+temporary directory was inaccessible. A fresh GUID-named --basetemp under
+ignored .qa passes all 119 tests without global TEMP/ACL changes. The guide now
+uses that command. Separately, an accidental web/.venv made ESLint inspect pip's
+vendored JavaScript. ESLint now excludes Python virtual environments; lint
+passes with that folder left intact. No environment was deleted. The user's
+frontend tests (20), build and browser smoke had already passed; no additional
+AWS calls, deployment, commits or pushes occurred for this correction.
+
 Decision for our 7–10 day delivery: start with a small FastAPI service and an
 explicit provisional contract. A React/TypeScript/Vite SPA now consumes it in `web/`.
 An opt-in DynamoDB demo adapter and Terraform application module are implemented

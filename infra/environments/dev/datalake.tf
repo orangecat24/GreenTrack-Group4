@@ -11,6 +11,13 @@ module "challenge2" {
   quality_job_script_path = abspath("${path.module}/../../../data/glue/quality_job.py")
   quality_ruleset_path    = abspath("${path.module}/../../../data/quality/silver_readings.dqdl")
   consumer_role_arns      = var.gold_consumer_role_arns
+
+  # Preserve the existing SageMaker database grant observed in the reviewed
+  # first-app plan. This does not grant ALL to the API or other consumers, and
+  # any later reduction should be reviewed separately from deploying the app.
+  consumer_database_permission_overrides = {
+    "arn:aws:iam::886565871385:role/g4-greentrack-dev-sagemaker-execution" = ["ALL", "DESCRIBE"]
+  }
 }
 
 variable "gold_consumer_role_arns" {
