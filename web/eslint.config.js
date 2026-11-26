@@ -5,7 +5,13 @@ import refresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'coverage/**', 'playwright-report/**', 'test-results/**', '*.tsbuildinfo'] },
+  {
+    // Python environments contain third-party JavaScript (for example in pip).
+    // Exclude them even if one was accidentally created inside web/; lint is
+    // meant to check our source, not installed dependency internals.
+    ignores: ['**/.venv/**', '**/venv/**', 'dist/**', 'coverage/**',
+      'playwright-report/**', 'test-results/**', '*.tsbuildinfo'],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

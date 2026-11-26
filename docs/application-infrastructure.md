@@ -1,4 +1,12 @@
-# Person 2 application infrastructure: prepared, not deployed
+# Person 2 application infrastructure
+
+Latest verification (November 25, 2026): the user reports completing the manual
+apply and frontend publication. Read-only live checks independently confirmed
+`/health` returns 200 with mock/demo JSON, and API Gateway has the intended
+explicit CORS origins. The deployed chat preflight returns 405, so the complete
+browser smoke has **not** passed. A local route correction is ready; see
+[the CORS recovery steps](run-the-demo.md#86-recover-from-chat-preflight-http-405).
+The implementation-time notes below describe the earlier, undeployed increment.
 
 This increment defines the application and builds a local deployment artifact.
 No AWS resource, backend state, table, asset upload or deployment was accessed by
@@ -42,7 +50,7 @@ inspected AWS or confirmed which resources are tracked in dev's remote state.
 | `infra/challenge1/main.tf` | Three `PAY_PER_REQUEST` tables, string `PK`/`SK`, no indexes, plus six Standard non-secret SSM configuration parameters. No table records are created. |
 | `api.tf`: execution role | Trusts Lambda only. Writes only to its pre-created log group. In mock mode it has no DynamoDB permission. DynamoDB mode adds only `dynamodb:Query` on the three exact table ARNs; no Scan, seed writes, SSM reads or AI permissions. |
 | `api.tf`: Lambda | Python 3.14, x86_64, 512 MB, 15-second timeout, reserved concurrency 2. Handler `app.lambda_handler.handler`. No VPC or provisioned concurrency. |
-| `api.tf`: HTTP API | Payload v2 proxy, `$default` stage and route, automatic stage deployment, throttle target 2 requests/second with burst 10. Throttling is best effort, not a spending cap. |
+| `api.tf`: HTTP API | Payload v2 proxy, `$default` stage, routes `GET /`, `GET /{proxy+}` and `POST /chat`, automatic stage deployment, throttle target 2 requests/second with burst 10. Throttling is best effort, not a spending cap. |
 | `api.tf`: logs | Separate Lambda and gateway log groups, both seven-day retention. Gateway logs contain request ID/status/route/response size, not query strings or chat bodies. |
 | `frontend.tf`: S3 | Account-suffixed `g4-greentrack-dev-web-...` bucket, all public access blocked, ACLs disabled, AES256 encryption, no website endpoint. Nonempty bucket deletion fails (`force_destroy=false`). |
 | `frontend.tf`: CloudFront/OAC | Default HTTPS domain/certificate, HTTP redirects to HTTPS, signed origin access restricted to this distribution, PriceClass_100, compression. Default object `index.html`. |
@@ -288,6 +296,13 @@ enabled. API Gateway supplies preflight responses. Local development still uses
 the Vite proxy, so no FastAPI CORS middleware is added. See
 [HTTP API CORS](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-cors.html)
 and [S3 origin access control](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html).
+
+The explicit GET/POST routes deliberately leave OPTIONS to the gateway. The
+former `$default` route sent chat preflight to FastAPI and produced a live 405
+even with correct CORS headers. `GET /{proxy+}` keeps FastAPI's GET endpoints and
+documentation reachable; `GET /` preserves its documentation redirect; POST
+chat and weekly-summary share `POST /chat`. A future POST endpoint needs its
+own Gateway route. Do not restore a catch-all route without testing preflight.
 
 ## Costs and remaining verification
 

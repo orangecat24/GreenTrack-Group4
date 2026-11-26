@@ -37,9 +37,11 @@ resource "aws_lakeformation_permissions" "pipeline_role_gold_super" {
 }
 
 resource "aws_lakeformation_permissions" "consumer_gold_database" {
-  for_each    = toset(var.consumer_role_arns)
-  principal   = each.value
-  permissions = ["DESCRIBE"]
+  for_each  = toset(var.consumer_role_arns)
+  principal = each.value
+  # A first app deployment must not silently revoke an existing consumer's
+  # access. Exceptions are explicit per role; new consumers stay DESCRIBE-only.
+  permissions = lookup(var.consumer_database_permission_overrides, each.value, ["DESCRIBE"])
 
   database {
     name = aws_glue_catalog_database.gold.name

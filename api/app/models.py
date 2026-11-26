@@ -38,7 +38,7 @@ class Window(BaseModel):
 
 
 class ConsumptionQuery(Window):
-    """Select hourly buckets or complete UTC calendar-day totals."""
+    """Select hourly/calendar-day buckets; quality describes observed coverage."""
 
     grain: Literal["hourly", "daily"] = "hourly"
 
@@ -60,7 +60,9 @@ class ConsumptionPoint(BaseModel):
     household_id: str
     timestamp: AwareDatetime
     interval_end: AwareDatetime
-    energy_kwh: float = Field(ge=0)
+    energy_kwh: float | None = Field(ge=0, allow_inf_nan=False)
+    minutes_with_data: int | None = Field(default=None, ge=0, le=1440)
+    is_complete: bool | None = None
 
 
 class AnomalyPoint(BaseModel):
@@ -79,6 +81,8 @@ class AnomalyPoint(BaseModel):
 class ForecastPoint(ConsumptionPoint):
     """timestamp is the target hour; forecast_origin is the historical cutoff."""
 
+    # Nullable observations must not accidentally make numeric forecasts optional.
+    energy_kwh: float = Field(ge=0, allow_inf_nan=False)
     forecast_origin: AwareDatetime
     method: Literal["illustrative_previous_day"] = "illustrative_previous_day"
 
@@ -98,8 +102,11 @@ class ReadResponse(BaseModel, Generic[Item]):
     covered_start: AwareDatetime | None
     covered_end: AwareDatetime | None
     next_cursor: None = None
-    is_demo: Literal[True] = True
-    timezone_note: str = "UTC is a demo convention only; the source dataset timezone is unconfirmed."
+    is_demo: bool = True
+    data_source: Literal["synthetic", "gold", "unavailable"] = "synthetic"
+    status: Literal["available", "unavailable"] = "available"
+    note: str | None = None
+    timezone_note: str = "UTC is a project clock convention only; the source dataset timezone is unconfirmed."
 
 
 class ConsumptionResponse(ReadResponse[ConsumptionPoint]):
@@ -111,10 +118,20 @@ class ConsumptionResponse(ReadResponse[ConsumptionPoint]):
 class ForecastResponse(ReadResponse[ForecastPoint]):
     """Keep the forecast cutoff/horizon visible even when the result is empty."""
 
-    forecast_origin: AwareDatetime
-    target_start: AwareDatetime
-    target_end: AwareDatetime
+    forecast_origin: AwareDatetime | None
+    target_start: AwareDatetime | None
+    target_end: AwareDatetime | None
     note: str = "Illustrative previous-day values, not a trained model or validated prediction."
+
+    @model_validator(mode="after")
+    def validate_dates(self) -> "ForecastResponse":
+        """Only an explicitly unavailable model may omit origin/target dates."""
+        dates = (self.forecast_origin, self.target_start, self.target_end)
+        if self.status == "available" and any(value is None for value in dates):
+            raise ValueError("An available forecast requires origin and target dates")
+        if self.status == "unavailable" and (self.items or any(value is not None for value in dates)):
+            raise ValueError("An unavailable forecast cannot claim records or run dates")
+        return self
 
 
 class ChatRequest(Window):
@@ -162,5 +179,6 @@ class HealthResponse(BaseModel):
     """Local process health does not imply any AWS service is connected."""
 
     status: Literal["ok"] = "ok"
-    data_mode: Literal["mock"] = "mock"
-    is_demo: Literal[True] = True
+    data_mode: Literal["mock", "dynamodb"] = "mock"
+    data_source: Literal["synthetic", "gold"] = "synthetic"
+    is_demo: bool = True

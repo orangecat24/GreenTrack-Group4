@@ -17,9 +17,12 @@ class DynamoSettings:
     anomalies_table: str
     forecasts_table: str
     forecast_origin: datetime = FORECAST_ORIGIN
+    data_source: str = "synthetic"
 
     def __post_init__(self) -> None:
         """Reject missing/ambiguous destinations before constructing any client."""
+        if self.data_source not in ("synthetic", "gold"):
+            raise ValueError("APP_DATA_SOURCE must be synthetic or gold.")
         if not self.region or not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)+-\d+", self.region):
             raise ValueError("An explicit AWS Region is required, e.g. eu-central-1.")
         names = (self.consumption_table, self.anomalies_table, self.forecasts_table)
@@ -39,6 +42,7 @@ class DynamoSettings:
             consumption_table=os.getenv("DYNAMODB_CONSUMPTION_TABLE", ""),
             anomalies_table=os.getenv("DYNAMODB_ANOMALIES_TABLE", ""),
             forecasts_table=os.getenv("DYNAMODB_FORECASTS_TABLE", ""),
+            data_source=os.getenv("APP_DATA_SOURCE", "synthetic"),
             forecast_origin=datetime.fromisoformat(os.getenv(
                 "DYNAMODB_FORECAST_ORIGIN", FORECAST_ORIGIN.isoformat())),
         )
@@ -47,6 +51,9 @@ class DynamoSettings:
 def create_repository() -> EnergyRepository:
     """Keep the mock path free of SDK imports, clients, and credential lookup."""
     mode = os.getenv("APP_DATA_MODE", "mock")
+    source = os.getenv("APP_DATA_SOURCE", "synthetic")
+    if source not in ("synthetic", "gold") or (mode == "mock" and source != "synthetic"):
+        raise ValueError("APP_DATA_SOURCE must be synthetic or gold; mock requires synthetic.")
     if mode == "mock":
         return MockRepository()
     if mode == "dynamodb":

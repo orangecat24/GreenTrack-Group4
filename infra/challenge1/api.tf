@@ -37,8 +37,8 @@ resource "aws_iam_role_policy" "logs" {
 }
 
 # In mock mode there is NO DynamoDB permission attached to the execution role.
-# Changing data_mode in Terraform adds just Query on these three tables. The
-# loader's BatchWriteItem permission belongs to a different, future identity.
+# Gold mode queries only consumption; synthetic DynamoDB mode uses three tables.
+# Loader conditional writes belong to an independently authorized operator.
 resource "aws_iam_role_policy" "read_demo" {
   count = var.data_mode == "dynamodb" ? 1 : 0
   name  = "${var.name_prefix}-api-query"
@@ -48,7 +48,7 @@ resource "aws_iam_role_policy" "read_demo" {
     Statement = [{
       Effect   = "Allow"
       Action   = ["dynamodb:Query"]
-      Resource = [for table in aws_dynamodb_table.demo : table.arn]
+      Resource = var.data_source == "gold" ? [aws_dynamodb_table.demo["consumption"].arn] : [for table in aws_dynamodb_table.demo : table.arn]
     }]
   })
 }
@@ -70,6 +70,10 @@ resource "aws_lambda_function" "api" {
     variables = local.api_configuration
   }
   lifecycle {
+    precondition {
+      condition     = var.data_mode != "mock" || var.data_source == "synthetic"
+      error_message = "Mock storage requires synthetic provenance."
+    }
     precondition {
       condition     = fileexists(var.lambda_zip_path)
       error_message = "Build the Linux Lambda ZIP with scripts/build_lambda.py before planning deployment."
@@ -102,8 +106,25 @@ resource "aws_apigatewayv2_integration" "api" {
 }
 
 resource "aws_apigatewayv2_route" "api" {
+  api_id = aws_apigatewayv2_api.api.id
+  # Match application GET requests, not every HTTP method. The former $default
+  # route forwarded chat's OPTIONS preflight to FastAPI, which returned 405.
+  # Leaving OPTIONS unmatched lets the gateway's CORS configuration answer it.
+  # The greedy path also preserves /docs and /openapi.json without listing every
+  # FastAPI GET endpoint twice. It does not match '/', hence the route below.
+  route_key = "GET /{proxy+}"
+  target    = "integrations/${aws_apigatewayv2_integration.api.id}"
+}
+
+resource "aws_apigatewayv2_route" "api_root" {
   api_id    = aws_apigatewayv2_api.api.id
-  route_key = "$default"
+  route_key = "GET /"
+  target    = "integrations/${aws_apigatewayv2_integration.api.id}"
+}
+
+resource "aws_apigatewayv2_route" "api_chat" {
+  api_id    = aws_apigatewayv2_api.api.id
+  route_key = "POST /chat"
   target    = "integrations/${aws_apigatewayv2_integration.api.id}"
 }
 

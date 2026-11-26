@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { readPath } from '../api/client'
 import type { ConsumptionResponse, Grain, WindowQuery } from '../api/types'
 import { useApiRead } from '../hooks/useApiRead'
-import { Coverage, DemoBadge, RequestState } from './Common'
+import { Coverage, Provenance, RequestState } from './Common'
+import { consumptionSummary } from '../consumptionSummary'
 import { EnergyChart, EnergyTable } from './EnergyChart'
 
 export function Consumption({ window }: { window: WindowQuery | null }) {
@@ -10,8 +11,7 @@ export function Consumption({ window }: { window: WindowQuery | null }) {
   const [grain, setGrain] = useState<Grain>('daily')
   const result = useApiRead<ConsumptionResponse>(window ? readPath('/consumption', window, grain) : null)
   const data = result.data
-  const total = data?.items.reduce((sum, item) => sum + item.energy_kwh, 0) ?? 0
-  const peak = data?.items.reduce((max, item) => Math.max(max, item.energy_kwh), 0) ?? 0
+  const summary = data ? consumptionSummary(data) : null
   const unit = data?.units.energy_kwh ?? 'kWh'
 
   return <section aria-labelledby="consumption-title">
@@ -20,7 +20,7 @@ export function Consumption({ window }: { window: WindowQuery | null }) {
         <p className="eyebrow">Understand your usage</p>
         <h2 id="consumption-title">Consumption</h2>
       </div>
-      <DemoBadge show={data?.is_demo ?? false} />
+      <Provenance data={data} />
     </div>
 
     <div className="panel toolbar">
@@ -40,20 +40,20 @@ export function Consumption({ window }: { window: WindowQuery | null }) {
       <div className="stats-grid">
 
         <article className="stat-card primary">
-          <span>Total consumption</span>
-          <strong>{total.toFixed(2)} <small>{unit}</small></strong>
-          <p>Sum of returned intervals</p>
+          <span>{summary?.partial ? 'Observed energy' : 'Total consumption'}</span>
+          <strong>{summary?.total == null ? 'No measured energy' : summary.total.toFixed(2)} <small>{summary?.total != null && unit}</small></strong>
+          <p>{summary?.partial ? 'Partial coverage; this is not a complete-period total.' : 'Sum of returned intervals'}</p>
         </article>
 
         <article className="stat-card">
           <span>Highest {data.grain === 'daily' ? 'day' : 'hour'}</span>
-          <strong>{peak.toFixed(2)} <small>{unit}</small></strong>
+          <strong>{summary?.peak == null ? 'Unavailable' : summary.peak.toFixed(2)} <small>{summary?.peak != null && unit}</small></strong>
           <p>Within this selection</p>
         </article>
 
         <article className="stat-card">
           <span>Intervals returned</span><strong>{data.items.length}</strong>
-          <p>{data.grain === 'daily' ? 'Complete UTC days' : 'Hourly energy readings'}</p>
+          <p>{data.grain === 'daily' ? 'Calendar-day buckets' : 'Hourly energy buckets'}</p>
         </article>
 
       </div>
@@ -64,12 +64,17 @@ export function Consumption({ window }: { window: WindowQuery | null }) {
         </div>
 
         <EnergyChart actual={data.items} unit={unit} />
-        <EnergyTable items={data.items} unit={unit} label="Actual consumption data" />
+        <EnergyTable items={data.items} unit={unit} label={data.is_demo ? 'Synthetic consumption data' : 'Historical consumption data'} />
 
       </div>
 
     </>}
 
+    {data && summary && <div className="notice" role="note">
+      <p>{summary.missing} missing periods; {summary.incomplete} incomplete intervals; {summary.nulls} null energy values.</p>
+      {data.data_source === 'gold' ? <p>{summary.minutes} / {summary.expectedMinutes} observed minutes. {summary.unknown > 0 && `${summary.unknown} intervals have unknown quality.`}</p>
+        : <p>Observed-minute quality is not applicable to synthetic fixtures.</p>}
+    </div>}
     {data && <Coverage data={data} />}
     
   </section>

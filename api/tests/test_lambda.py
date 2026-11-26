@@ -47,7 +47,7 @@ def test_default_mock_health_and_https_redirect(monkeypatch):
     monkeypatch.delenv("APP_DATA_MODE")
     response = handler(event("/health"), {})
     assert response["statusCode"] == 200
-    assert json.loads(response["body"]) == {"status": "ok", "data_mode": "mock", "is_demo": True}
+    assert json.loads(response["body"]) == {"status": "ok", "data_mode": "mock", "data_source": "synthetic", "is_demo": True}
     redirect = handler(event("/"), {})
     assert redirect["statusCode"] == 307
     assert redirect["headers"]["location"] == "https://example.execute-api.eu-central-1.amazonaws.com/docs"

@@ -12,6 +12,7 @@ from .dynamodb_items import (
     consumption_key, deserialize_item, forecast_key, household_key, timestamp_key,
 )
 from .models import AnomalyPoint, ConsumptionPoint, ConsumptionQuery, ForecastPoint, Window
+from .gold import validate_gold_item
 from .repository import RepositoryError
 from .storage import DynamoSettings
 
@@ -20,20 +21,27 @@ Point = TypeVar("Point", ConsumptionPoint, AnomalyPoint, ForecastPoint)
 
 def create_client(settings: DynamoSettings) -> Any:
     """Construct only on opt-in; SDK standard retries transient transport errors."""
+    return create_dynamodb_client(settings.region)
+
+
+def create_dynamodb_client(region: str) -> Any:
+    """Share the explicit Region/timeout/retry configuration with operator CLIs."""
     return boto3.session.Session().client(
-        "dynamodb", region_name=settings.region,
+        "dynamodb", region_name=region,
         config=Config(retries={"mode": "standard", "total_max_attempts": 3},
                       connect_timeout=3, read_timeout=5),
     )
 
 
 class DynamoDBRepository:
-    """Read synthetic demo rows from named tables without seeding at startup."""
+    """Read explicitly selected provenance without seeding or synthetic fallback."""
 
     def __init__(self, client: Any, settings: DynamoSettings) -> None:
         """Allow injected Stubber clients; construction performs no table reads."""
         self.client = client
         self.settings = settings
+        self.data_mode = "dynamodb"
+        self.data_source = settings.data_source
         self.forecast_origin = settings.forecast_origin
         self.forecast_target_start = settings.forecast_origin
         # This increment serves one configured 24-hour illustrative run. There
@@ -56,6 +64,7 @@ class DynamoDBRepository:
         }
         
         rows = []
+        snapshots = set()
         try:
             for _ in range(100):
                 response = self.client.query(**params)
@@ -63,9 +72,17 @@ class DynamoDBRepository:
                     item = deserialize_item(raw)
                     # Persisting fixtures in AWS does not make them real data.
                     # Refuse unknown provenance rather than mislabel it as demo.
-                    if item.get("is_demo") is not True or item.get("schema_version") != 1:
-                        raise RepositoryError("Stored demo data have unsupported provenance or schema.")
-                    point = model.model_validate(item)
+                    if self.data_source == "gold":
+                        point = validate_gold_item(item)
+                        snapshots.add(item["snapshot_id"])
+                        if len(snapshots) > 1:
+                            raise ValueError("Mixed gold snapshots")
+                    else:
+                        if item.get("is_demo") is not True or item.get("schema_version") != 1:
+                            raise RepositoryError("Stored demo data have unsupported provenance or schema.")
+                        point = model.model_validate(item)
+                        if isinstance(point, ConsumptionPoint) and point.energy_kwh is None:
+                            raise ValueError("Synthetic observations require numeric energy")
                     if (point.household_id != query.household_id
                             or item["PK"] != pk or item["SK"] != timestamp_key(point.timestamp)
                             or (isinstance(query, ConsumptionQuery) and item.get("grain") != query.grain)
@@ -85,7 +102,7 @@ class DynamoDBRepository:
         except (ClientError, BotoCoreError) as error:
             raise RepositoryError("DynamoDB read unavailable; check storage configuration or retry.") from error
         except (ValidationError, ValueError, KeyError, TypeError) as error:
-            raise RepositoryError("Stored demo data are invalid.") from error
+            raise RepositoryError("Stored data are invalid.") from error
 
     def consumption(self, query: ConsumptionQuery) -> tuple[ConsumptionPoint, ...]:
         """Query the requested grain, not all household history or both grains."""
@@ -94,10 +111,14 @@ class DynamoDBRepository:
 
     def anomalies(self, query: Window) -> tuple[AnomalyPoint, ...]:
         """Read only anomaly hours within the selected household window."""
+        if self.data_source == "gold":
+            return ()
         return self._query(self.settings.anomalies_table, household_key(query.household_id), query, AnomalyPoint)
 
     def forecast(self, query: Window) -> tuple[ForecastPoint, ...]:
         """Select target hours within the explicitly configured forecast origin."""
+        if self.data_source == "gold":
+            return ()
         rows = self._query(self.settings.forecasts_table,
                            forecast_key(query.household_id, self.forecast_origin), query, ForecastPoint)
         if any(point.forecast_origin != self.forecast_origin

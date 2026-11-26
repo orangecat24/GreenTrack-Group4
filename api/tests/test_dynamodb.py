@@ -229,9 +229,8 @@ def test_dynamodb_startup_does_not_seed_or_query(aws_client, monkeypatch):
     """No Stubber responses are queued: any startup AWS operation fails this test."""
     configure_dynamodb(monkeypatch, aws_client)
     with Stubber(aws_client), TestClient(create_app()) as client:
-        # Preserve the existing health contract: these are still mock/demo data,
-        # and /health is process health rather than an AWS readiness check.
-        assert client.get("/health").json() == {"status": "ok", "data_mode": "mock", "is_demo": True}
+        # Health reports selected storage accurately without issuing an AWS request.
+        assert client.get("/health").json() == {"status": "ok", "data_mode": "dynamodb", "data_source": "synthetic", "is_demo": True}
 
 
 def test_dynamodb_requires_explicit_configuration_before_client_creation(monkeypatch):
@@ -288,43 +287,49 @@ def test_loader_rejects_missing_or_ambiguous_write_configuration(args):
     forbidden.assert_not_called()
 
 
-def test_loader_retries_only_unprocessed_items(aws_client):
-    """HTTP 200 does not imply the entire batch was written successfully."""
+def put_params(table, item):
+    """A conditional insert is the protection against racing gold/demo loaders."""
+    return {"TableName": table, "Item": item, "ConditionExpression": "attribute_not_exists(#pk)",
+            "ExpressionAttributeNames": {"#pk": "PK"}, "ReturnValuesOnConditionCheckFailure": "ALL_OLD"}
+
+
+def test_loader_retries_only_the_failed_conditional_insert(aws_client):
+    """A transient failure retries that key without replaying earlier writes."""
     items = fixture_items(SETTINGS)[SETTINGS.consumption_table][:2]
-    both = {SETTINGS.consumption_table: [{"PutRequest": {"Item": item}} for item in items]}
-    pending = {SETTINGS.consumption_table: [both[SETTINGS.consumption_table][1]]}
     sleep = Mock()
     with Stubber(aws_client) as stub:
-        stub.add_response("batch_write_item", {"UnprocessedItems": pending}, {"RequestItems": both})
-        stub.add_response("batch_write_item", {}, {"RequestItems": pending})
+        stub.add_response("put_item", {}, put_params(SETTINGS.consumption_table, items[0]))
+        stub.add_client_error("put_item", "ProvisionedThroughputExceededException",
+                              expected_params=put_params(SETTINGS.consumption_table, items[1]))
+        stub.add_response("put_item", {}, put_params(SETTINGS.consumption_table, items[1]))
         assert write_items(aws_client, {SETTINGS.consumption_table: items}, sleep=sleep) == 2
         sleep.assert_called_once()
         stub.assert_no_pending_responses()
 
 
-def test_loader_bounds_unprocessed_item_retries(aws_client):
-    """Stop on a persistently throttled batch rather than retrying forever."""
+def test_loader_bounds_conditional_retries(aws_client):
+    """A persistently throttled key stops with a safe resumable error."""
     items = fixture_items(SETTINGS)[SETTINGS.consumption_table][:1]
-    pending = {SETTINGS.consumption_table: [{"PutRequest": {"Item": items[0]}}]}
     with Stubber(aws_client) as stub:
-        for _ in range(4):
-            stub.add_response("batch_write_item", {"UnprocessedItems": pending}, {"RequestItems": pending})
+        for _ in range(3):
+            stub.add_client_error("put_item", "ProvisionedThroughputExceededException",
+                                  expected_params=put_params(SETTINGS.consumption_table, items[0]))
         with pytest.raises(RepositoryError, match="retry limit"):
             write_items(aws_client, {SETTINGS.consumption_table: items}, sleep=lambda _: None)
         stub.assert_no_pending_responses()
 
 
-def test_loader_batches_full_seed_and_replays_stable_keys(aws_client):
-    """Two complete runs send the same puts, each respecting AWS's 25-item cap."""
+def test_loader_seed_replays_skip_identical_keys(aws_client):
+    """The full seed inserts once and skips all 202 identical records on rerun."""
     tables = fixture_items(SETTINGS)
-    flat = [(table, item) for table, items in tables.items() for item in items]
     with Stubber(aws_client) as stub:
-        for _ in range(2):
-            for offset in range(0, len(flat), 25):
-                batch = {}
-                for table, item in flat[offset:offset + 25]:
-                    batch.setdefault(table, []).append({"PutRequest": {"Item": item}})
-                stub.add_response("batch_write_item", {}, {"RequestItems": batch})
+        for table, items in tables.items():
+            for item in items:
+                stub.add_response("put_item", {}, put_params(table, item))
+        for table, items in tables.items():
+            for item in items:
+                stub.add_client_error("put_item", "ConditionalCheckFailedException",
+                    expected_params=put_params(table, item), modeled_fields={"Item": item})
         assert write_items(aws_client, tables) == 202
         assert write_items(aws_client, fixture_items(SETTINGS)) == 202
         stub.assert_no_pending_responses()
@@ -333,7 +338,7 @@ def test_loader_batches_full_seed_and_replays_stable_keys(aws_client):
 def test_loader_write_failure_is_nonzero_and_does_not_leak_aws_diagnostics(aws_client, capsys):
     """A partial write failure needs a failed CLI exit, not a success count."""
     with Stubber(aws_client) as stub:
-        stub.add_client_error("batch_write_item", service_error_code="AccessDeniedException",
+        stub.add_client_error("put_item", service_error_code="AccessDeniedException",
                               service_message="internal diagnostic only", http_status_code=400)
         assert main([*CLI, "--write"], client_factory=lambda settings: aws_client) == 1
         output = capsys.readouterr()

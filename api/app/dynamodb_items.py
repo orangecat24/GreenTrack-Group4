@@ -35,7 +35,8 @@ def forecast_key(household_id: str, origin: datetime) -> str:
 
 def point_item(point: ConsumptionPoint | AnomalyPoint, pk: str) -> dict[str, Any]:
     """Map one normalized point, retaining synthetic provenance in storage."""
-    item = point.model_dump(mode="json")
+    # Preserve schema-1 seeds; invented fixtures have no observed-minute quality.
+    item = point.model_dump(mode="json", exclude_none=True)
     item.update(PK=pk, SK=timestamp_key(point.timestamp), is_demo=True, schema_version=1)
     item["timestamp"] = timestamp_key(point.timestamp)
     item["interval_end"] = timestamp_key(point.interval_end)

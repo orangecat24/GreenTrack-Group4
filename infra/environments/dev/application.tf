@@ -5,6 +5,7 @@ module "challenge1" {
   name_prefix     = "g4-greentrack-dev"
   lambda_zip_path = abspath("${path.module}/../../../build/greentrack-api.zip")
   data_mode       = var.app_data_mode
+  data_source     = var.app_data_source
 }
 
 variable "app_data_mode" {
@@ -14,6 +15,16 @@ variable "app_data_mode" {
   validation {
     condition     = contains(["mock", "dynamodb"], var.app_data_mode)
     error_message = "app_data_mode must be mock or dynamodb."
+  }
+}
+
+variable "app_data_source" {
+  description = "Synthetic by default; gold requires a separately reviewed data load and DynamoDB mode."
+  type        = string
+  default     = "synthetic"
+  validation {
+    condition     = contains(["synthetic", "gold"], var.app_data_source)
+    error_message = "app_data_source must be synthetic or gold."
   }
 }
 
