@@ -1,5 +1,10 @@
 # Run GreenTrack locally and deploy the current mock app
 
+**November 26, stage 6:** genuine gold consumption is now loaded into the existing
+consumption table and verified through the local API/browser. For exact local
+real-data startup use [gold-local-run.md](gold-local-run.md). The deployed cloud
+application remains mock; no new cloud application deployment occurred.
+
 **November 26 update:** the user reports successful manual deployment and use of
 the mock website. The November 25 resource-absence and pending-check statements
 below are historical observations, not a new check of today's cloud state.
@@ -56,6 +61,7 @@ do not need AWS or the data pipeline. Do not copy credentials into `.env` files.
 
 ```powershell
 $env:APP_DATA_MODE = 'mock'
+$env:APP_DATA_SOURCE = 'synthetic'
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir api --reload
 ```
 

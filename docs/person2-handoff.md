@@ -1,5 +1,30 @@
 # Person 2: first mock API increment
 
+Stage 6 (November 26): explicit bounded write authorization exercised after
+source/identity/schema/fresh-preview rechecks exactly matched the stage 5 review.
+**175 consumption records written, 0 skipped, 0 failed**; no overwrite/deletion.
+Post-load Query verified 175 identical records and zero conflicts. Actual local
+gold API/browser passed with 147.3223 kWh, complete quality and honest placeholders;
+162 Python tests, 26 frontend tests and one mock browser also passed. Null/partial
+cases were tested offline, not fabricated in the complete real-data sample.
+No application defect or source-code change was found. Temporary own test servers
+were stopped. [gold-local-run.md](gold-local-run.md) contains exact PowerShell
+startup, evidence and optional documentation commit/push commands. Only the
+consumption table received the authorized inserts; deployed Lambda, other tables,
+IAM/LF and infrastructure remain unchanged. Stage 7 planning is next; keep
+DEPLOY_ENABLED unset/false. Nothing was committed or pushed by the agent.
+
+Stage 5 review (November 26): started clean at 2dacab7. Exact source/quality
+revalidation and greentrack identity/consumption-table schema checks passed.
+Read-only Query of the two household-1 grain partitions for June 1–7 found
+**175 new, 0 identical, 0 conflicting keys**. No DynamoDB writes occurred; the
+whole table was not scanned or assumed empty. The ignored preview and concise
+reviewed-load manifest are fingerprinted in [gold-load-review.md](gold-load-review.md),
+along with the exact proposed stage 6 command. Recommendation: proceed after
+stage 6 explicit authorization/rechecks. PutItem access is unverified, not
+inferred from read access. No source code/IAM/LF/resource/config changes,
+apply, seeding, commit or push occurred; the deployed mock remains unchanged.
+
 Stage 4 (November 26): frontend now handles real/synthetic provenance, null energy,
 partial/missing-minute coverage and unavailable models without invented dates.
 Existing tabs and request guards remain. Added a separate opt-in gold smoke bound

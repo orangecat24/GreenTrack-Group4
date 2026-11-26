@@ -1,11 +1,21 @@
 # Real gold-consumption integration
 
-**Latest: stage 4 completed offline November 26, 2026.** See
+**Latest: stage 6 completed November 26, 2026.** The explicitly authorized load
+wrote 175 consumption records, skipped/failed 0. Post-load Query found all 175
+identical; actual local gold API/browser and mock regressions passed. See
+[gold-local-run.md](gold-local-run.md) for evidence and exact two-terminal startup.
+The deployed Lambda remains unchanged; infrastructure planning/release is pending.
+The stage 5 read-only preview completed November 26, 2026.
+[gold-load-review.md](gold-load-review.md) records the exact source/destination,
+fingerprints and proposed later write. The bounded Query reads found 175 new
+keys, 0 identical records and 0 conflicts; no records were written. Proceed to
+stage 6 only with its explicit authorization and rechecks.
+Stage 4 completed offline November 26, 2026. See
 [gold-frontend.md](gold-frontend.md) for UI behavior, 26 passing frontend tests,
 mock browser verification and the opt-in gold smoke (collected, not executed).
 Backend/loader/source
 plumbing now exist; [gold-loader.md](gold-loader.md) records commands, tests,
-compatibility and scope. Gold live loading/deployment remains pending.
+compatibility and scope. Gold application deployment remains pending.
 Genuine source exports were independently verified in stage 2.
 See [the stage 2 evidence](#stage-2-evidence-november-26-2026). The stage 1 account
 below records that earlier session's offline-only scope, not today's cumulative
@@ -364,8 +374,8 @@ future AWS access/writes/apply on its own.
 | 2. Verify gold access and export bounded sample | **Complete, 2026-11-26**: two authorized SELECTs, 168 hourly + 7 daily rows, hashes/manifest/coverage and handoff comparisons verified; evidence below. No source mutation. |
 | 3. Backend, safe loader, config plumbing | **Complete offline, 2026-11-26**: 162 Python tests, 20 frontend tests, mock browser/lint/build, isolated Terraform checks and genuine-export dry run passed. No actual AWS calls; see gold-loader.md. |
 | 4. UI and integration tests | **Complete offline, 2026-11-26**: 26 frontend tests, lint/build, mock browser and 162 Python tests passed; gold smoke collection passed. Actual gold browser execution requires later loading/startup. See gold-frontend.md. |
-| 5. Review destination and proposed load | Pending scoped reads; Query both partitions, exact new/identical/conflicting keys and source/destination manifest. Conflicts mean stop, not implicit overwrite. |
-| 6. Load approved sample, verify local app | Pending explicit bounded consumption writes; compare independent export -> stored rows -> actual local API/browser. Other tables/models stay untouched. |
+| 5. Review destination and proposed load | **Complete read-only, 2026-11-26** at 2dacab7: source dry run, identity/DescribeTable and both Query windows passed. 175 new / 0 identical / 0 conflicts. Reviewed manifests saved; see gold-load-review.md. Conditional write permission remains unverified. |
+| 6. Load approved sample, verify local app | **Complete, 2026-11-26**: 175 written / 0 skipped / 0 failed; Query verified 175 identical. Local gold browser 1 passed, mock browser 1 passed, Python 162 and frontend 26 passed; HTTP source/quality/empty/boundary checks passed. See gold-local-run.md. Deployed Lambda unchanged. |
 | 7. Artifact/readiness/full-root plan | Pending separate authorization; Linux artifact proof, exact hashes and explicit proceed/hold decision. No apply. |
 | 8. Manual deployment instructions and user execution | Pending approved plan; one quoted PowerShell command per box, expected results, stopping points and safe publication/rollback. |
 | 9. Deployed verification and final handoff | Pending HTTPS/browser/CORS/data/provenance/quality evidence, local regressions, truthful remaining Person 3 integration work. |
