@@ -6,7 +6,11 @@ test('deployed HTTPS: real browser, public API contract and explicit CORS', asyn
   const api = process.env.DEPLOYED_API_BASE_URL!
   const health = await request.get(`${api}/health`, { headers: { Origin: website } })
   expect(health.status()).toBe(200)
-  expect(await health.json()).toEqual({ status: 'ok', data_mode: 'mock', is_demo: true })
+  const healthBody = await health.json()
+  expect(healthBody).toMatchObject({ status: 'ok', data_mode: 'mock', is_demo: true })
+  // Keep this mock smoke usable against the earlier deployed mock release while
+  // source metadata is rolled out. New API tests require the added field.
+  if ('data_source' in healthBody) expect(healthBody.data_source).toBe('synthetic')
   expect(health.headers()['access-control-allow-origin']).toBe(website)
 
   const preflight = await request.fetch(`${api}/chat`, {

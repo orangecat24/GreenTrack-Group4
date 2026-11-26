@@ -4,7 +4,7 @@ from typing import Sequence, TypeVar
 
 from .models import (
     AnomalyPoint, ChatRequest, ChatResponse, ConsumptionPoint, ConsumptionQuery,
-    ConsumptionResponse, ForecastResponse, ReadResponse, Window,
+    ConsumptionResponse, ForecastResponse, HealthResponse, ReadResponse, Window,
 )
 from .repository import EnergyRepository
 
@@ -32,13 +32,26 @@ class EnergyService:
         """Accept storage through the contract so a real adapter can replace mocks."""
         self.repository = repository
 
+    def health(self) -> HealthResponse:
+        """Describe configuration only, without probing AWS availability."""
+        return HealthResponse(data_mode=self.repository.data_mode,
+                              data_source=self.repository.data_source,
+                              is_demo=self.repository.data_source == "synthetic")
+
     def consumption(self, query: ConsumptionQuery) -> ConsumptionResponse:
         """Read the requested grain; storage can now query just that window."""
         items = self.repository.consumption(query)
-        return ConsumptionResponse(**metadata(query, items, {"energy_kwh": "kWh"}), grain=query.grain)
+        return ConsumptionResponse(**metadata(query, items, {"energy_kwh": "kWh"}), grain=query.grain,
+                                   data_source=self.repository.data_source,
+                                   is_demo=self.repository.data_source == "synthetic")
 
     def anomalies(self, query: Window) -> ReadResponse[AnomalyPoint]:
         """Filter demo detections without calculating new anomaly scores."""
+        if self.repository.data_source == "gold":
+            return ReadResponse[AnomalyPoint](**metadata(query, (), {
+                "observed_kwh": "kWh", "expected_kwh": "kWh", "score": "unitless"}),
+                data_source="unavailable", status="unavailable",
+                note="Anomaly detection is not integrated; no model outputs are available.")
         items = self.repository.anomalies(query)
         return ReadResponse[AnomalyPoint](**metadata(query, items, {
             "observed_kwh": "kWh", "expected_kwh": "kWh", "score": "unitless",
@@ -46,6 +59,10 @@ class EnergyService:
 
     def forecast(self, query: Window) -> ForecastResponse:
         """Filter by target timestamp; keep origin and full horizon explicit."""
+        if self.repository.data_source == "gold":
+            return ForecastResponse(**metadata(query, (), {"energy_kwh": "kWh"}),
+                data_source="unavailable", status="unavailable", forecast_origin=None,
+                target_start=None, target_end=None, note="Forecast model is not integrated.")
         items = self.repository.forecast(query)
         return ForecastResponse(
             **metadata(query, items, {"energy_kwh": "kWh"}),

@@ -6,10 +6,8 @@ This script never creates tables and is never invoked by API startup.
 
 import argparse
 import json
-import random
 import sys
 import time
-from collections import defaultdict
 from typing import Any, Callable, Sequence
 
 from botocore.exceptions import BotoCoreError, ClientError
@@ -42,27 +40,17 @@ def fixture_items(settings: DynamoSettings) -> dict[str, list[dict[str, Any]]]:
 
 def write_items(client: Any, tables: dict[str, list[dict[str, Any]]],
                 sleep: Callable[[float], None] = time.sleep) -> int:
-    """Write batches of at most 25 records, retrying only unprocessed records."""
-    pending_records = [(table, item) for table, items in tables.items() for item in items]
-    try:
-        for offset in range(0, len(pending_records), 25):
-            requests: dict[str, list[dict[str, Any]]] = defaultdict(list)
-            for table, item in pending_records[offset:offset + 25]:
-                requests[table].append({"PutRequest": {"Item": item}})
-            # SDK standard retries handle retryable HTTP/service failures.
-            # HTTP 200 can still contain UnprocessedItems, which needs its own
-            # bounded retry loop. Replaying *only* that subset avoids needless writes.
-            for attempt in range(4):
-                response = client.batch_write_item(RequestItems=dict(requests))
-                requests = {table: items for table, items in response.get("UnprocessedItems", {}).items() if items}
-                if not requests:
-                    break
-                if attempt == 3:
-                    raise RepositoryError("Seed retry limit reached; some records may already be written. Rerun with the same keys.")
-                sleep(random.uniform(0.05, 0.1) * 2 ** attempt)
-    except (ClientError, BotoCoreError) as error:
-        raise RepositoryError("Seed write unavailable; some records may already be written. Check configuration and rerun.") from error
-    return len(pending_records)
+    """Insert synthetic rows conditionally; reruns skip identical existing rows.
+
+    Gold and synthetic keys can overlap. Never let a demo seed replace a real
+    observation, even if another writer inserts after our offline preview.
+    """
+    from app.conditional_write import conditional_put
+
+    for table, items in tables.items():
+        for item in items:
+            conditional_put(client, table, item, sleep=sleep)
+    return sum(map(len, tables.values()))
 
 
 def main(argv: Sequence[str] | None = None, client_factory: Callable = create_client) -> int:
@@ -95,7 +83,7 @@ def main(argv: Sequence[str] | None = None, client_factory: Callable = create_cl
     try:
         client = client_factory(settings)
         count = write_items(client, tables)
-        print(f"Wrote {count} synthetic demo items using stable overwrite keys.")
+        print(f"Wrote {count} synthetic demo items using protected stable keys (identical records skipped).")
         return 0
     except (RepositoryError, ClientError, BotoCoreError):
         print("Seed failed. Some records may already be written; check configuration and rerun with the same keys.", file=sys.stderr)

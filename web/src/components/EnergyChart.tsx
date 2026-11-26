@@ -13,7 +13,7 @@ export function EnergyChart({ actual, forecast = [], unit }: {
         <CartesianGrid strokeDasharray="3 5" vertical={false} stroke="#e0e8e1" />
         <XAxis dataKey="timestamp" type="number" domain={['dataMin', 'dataMax']} scale="time" tickFormatter={(value: number) => formatTime(new Date(value).toISOString())} minTickGap={45} tick={{ fontSize: 11 }} />
         <YAxis unit={` ${unit}`} width={75} tick={{ fontSize: 11 }} />
-        <Tooltip labelFormatter={(value) => `${formatTime(new Date(Number(value)).toISOString())} UTC`} formatter={(value, name) => [`${Number(value).toFixed(2)} ${unit}`, name]} />
+        <Tooltip labelFormatter={(value) => `${formatTime(new Date(Number(value)).toISOString())} UTC`} formatter={(value, name) => [value == null ? 'Unavailable' : `${Number(value).toFixed(2)} ${unit}`, name]} />
         <Legend />
         {actual.length > 0 && <Line name="Actual consumption" dataKey="actual" stroke="#27634b" strokeWidth={2.5} dot={rows.length < 15} connectNulls={false} isAnimationActive={false} />}
         {forecast.length > 0 && <Line name="Illustrative forecast" dataKey="forecast" stroke="#bc7737" strokeDasharray="6 4" strokeWidth={2.5} dot={false} connectNulls={false} isAnimationActive={false} />}
@@ -24,7 +24,7 @@ export function EnergyChart({ actual, forecast = [], unit }: {
 
 export function EnergyTable({ items, unit, label }: { items: ConsumptionPoint[]; unit: string; label: string }) {
   return <details className="data-details"><summary>{label} · {items.length} intervals</summary>
-    <div className="table-scroll"><table><caption>{label} (UTC, interval end exclusive)</caption><thead><tr><th>Interval start</th><th>Interval end</th><th>Energy ({unit})</th></tr></thead>
-      <tbody>{items.map((item) => <tr key={item.timestamp}><td>{formatTime(item.timestamp)}</td><td>{formatTime(item.interval_end)}</td><td>{item.energy_kwh.toFixed(2)}</td></tr>)}</tbody></table></div>
+    <div className="table-scroll"><table><caption>{label} (UTC, interval end exclusive)</caption><thead><tr><th>Interval start</th><th>Interval end</th><th>Energy ({unit})</th><th>Observed coverage</th></tr></thead>
+      <tbody>{items.map((item) => <tr key={item.timestamp}><td>{formatTime(item.timestamp)}</td><td>{formatTime(item.interval_end)}</td><td>{item.energy_kwh == null ? 'Unavailable' : item.energy_kwh.toFixed(2)}</td><td>{item.is_complete == null ? 'Not observed' : `${item.minutes_with_data} minutes · ${item.is_complete ? 'Complete' : 'Incomplete'}`}</td></tr>)}</tbody></table></div>
   </details>
 }

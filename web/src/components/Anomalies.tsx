@@ -2,7 +2,7 @@ import { readPath } from '../api/client'
 import type { AnomalyPoint, ReadResponse, WindowQuery } from '../api/types'
 import { formatTime } from '../dates'
 import { useApiRead } from '../hooks/useApiRead'
-import { Coverage, DemoBadge, RequestState } from './Common'
+import { Coverage, Provenance, RequestState, Unavailable } from './Common'
 
 export function Anomalies({ window }: { window: WindowQuery | null }) {
   const result = useApiRead<ReadResponse<AnomalyPoint>>(window ? readPath('/anomalies', window) : null)
@@ -15,15 +15,16 @@ export function Anomalies({ window }: { window: WindowQuery | null }) {
         <h2 id="anomalies-title">Anomalies</h2>
       </div>
       
-      <DemoBadge show={data?.is_demo ?? false} />
+      <Provenance data={data} />
     </div>
 
-    <p className="section-intro">Review unusual hours alongside their expected consumption. Demo scores are fixture values, not model detections.</p>
+    <p className="section-intro">Review unusual hours alongside their expected consumption. {data?.status !== 'unavailable' && data?.is_demo && 'Demo scores are fixture values, not model detections.'}</p>
     
-    {window && <RequestState {...result} empty={data?.items.length === 0} />}
+    {window && <RequestState {...result} empty={data?.status !== 'unavailable' && data?.items.length === 0} />}
+    {data?.status === 'unavailable' && <Unavailable data={data} />}
     {data && data.items.length > 0 && <div className="panel table-scroll">
       <table>
-        <caption>{data.items.length} synthetic anomaly records · UTC</caption>
+        <caption>{data.items.length} {data.is_demo ? 'synthetic' : 'model'} anomaly records · UTC</caption>
         
         <thead>
           <tr>

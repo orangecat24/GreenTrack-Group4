@@ -4,6 +4,9 @@ GreenTrack student demo: FastAPI, React/TypeScript/Vite and Terraform.
 
 - [Person 2 handoff and local API commands](docs/person2-handoff.md)
 - [Run the current demo locally and deploy/test it safely](docs/run-the-demo.md)
+- [Real gold-consumption integration plan, checklist and offline baseline](docs/real-data-integration.md)
+- [Gold backend and safe loader commands (offline stage 3)](docs/gold-loader.md)
+- [Gold frontend, offline tests and opt-in browser smoke (stage 4)](docs/gold-frontend.md)
 - [Frontend startup and tests](web/README.md)
 - [Existing AWS foundation and teammate handoff](docs/foundation-handoff.md)
 - [Application infrastructure, packaging and later deployment](docs/application-infrastructure.md)
@@ -21,7 +24,11 @@ GreenTrack student demo: FastAPI, React/TypeScript/Vite and Terraform.
 - [Person 1 resource inventory and cleanup plan](docs/resource-inventory.md)
 
 The foundation handoff reports that the Terraform state bucket was already
-applied by its owner. Person 2's application is prepared for deployment; local
-mock mode remains the default and does not require AWS credentials.
-The GitHub deployment pipeline is prepared but requires explicit repository
-activation; no deployment was run from the implementation session.
+applied by its owner. The user reports successfully deploying and manually
+testing the mock website. Local mock mode remains the default and needs no AWS
+credentials. Genuine gold consumption is not connected yet; the linked plan
+records the current offline baseline and the separately authorized next stages.
+Keep automatic deployment disabled during that integration: the GitHub pipeline
+still explicitly selects mock and the shared Lake Formation admin configuration
+needs review before activation. No new live verification was performed for this
+documentation stage.

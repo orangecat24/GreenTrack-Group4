@@ -12,7 +12,9 @@ export interface ConsumptionPoint {
   household_id: string
   timestamp: string
   interval_end: string
-  energy_kwh: number
+  energy_kwh: number | null
+  minutes_with_data: number | null
+  is_complete: boolean | null
 }
 
 export interface AnomalyPoint {
@@ -26,6 +28,7 @@ export interface AnomalyPoint {
 }
 
 export interface ForecastPoint extends ConsumptionPoint {
+  energy_kwh: number
   forecast_origin: string
   method: 'illustrative_previous_day'
 }
@@ -40,6 +43,9 @@ export interface ReadResponse<T> {
   covered_end: string | null
   next_cursor: string | null
   is_demo: boolean
+  data_source: 'synthetic' | 'gold' | 'unavailable'
+  status: 'available' | 'unavailable'
+  note: string | null
   timezone_note: string
 }
 
@@ -48,9 +54,9 @@ export interface ConsumptionResponse extends ReadResponse<ConsumptionPoint> {
 }
 
 export interface ForecastResponse extends ReadResponse<ForecastPoint> {
-  forecast_origin: string
-  target_start: string
-  target_end: string
+  forecast_origin: string | null
+  target_start: string | null
+  target_end: string | null
   note: string
 }
 

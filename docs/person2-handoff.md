@@ -1,5 +1,55 @@
 # Person 2: first mock API increment
 
+Stage 4 (November 26): frontend now handles real/synthetic provenance, null energy,
+partial/missing-minute coverage and unavailable models without invented dates.
+Existing tabs and request guards remain. Added a separate opt-in gold smoke bound
+to reviewed export hashes/totals; only collection was run, not live requests.
+Passed: 162 Python tests, 26 frontend tests, lint/build and one local mock browser
+flow. See [gold-frontend.md](gold-frontend.md) for exact prerequisites, PowerShell
+commands and suggested commit/push steps. Earlier unstaged work is preserved;
+no AWS call, deployment, commit or push occurred. Stage 5 destination preview is next.
+
+Gold backend/loader (November 26, stage 3): implemented offline; see
+[gold-loader.md](gold-loader.md) for exact PowerShell commands, file tour and
+compatibility notes. New APP_DATA_SOURCE separates provenance from storage;
+health reports the configured mode without probing AWS. Gold reads support null
+energy and quality, preserve provenance on empty responses and leave missing
+model outputs explicitly unavailable. The CLI validates both exports before any
+client, defaults to dry run, and requires a fingerprinted preview for live writes.
+Conditional inserts protect gold and synthetic seeds from overwriting each other.
+Passed: 162 Python tests, 20 frontend tests, lint/build, one mock browser smoke,
+offline Terraform fmt/init/validate and the genuine exports' 175-item dry run.
+No actual AWS calls/writes, plan/apply, dependency upgrades, commit or push.
+Stage 4 UI work remains necessary before gold can be loaded/deployed/tested as
+a complete app. The deployed mock and all earlier Markdown work are preserved.
+
+Gold export verification (November 26): stage 2 completed under explicit query
+authorization. greentrack SSO identity, gold Iceberg schemas, LF access, primary
+workgroup and scoped bucket metadata passed; exactly two bounded SELECTs
+exported 168 hourly and 7 daily records for household-1, June 1 inclusive through
+June 8 exclusive. All periods are complete, with no gaps/nulls/duplicates; hourly
+and daily totals reconcile and match the handoff's rounded figures. Genuine
+weekly consumption is **147.3223 kWh**. Queries scanned 9,029 bytes in total.
+Ignored exports/manifest are in build/real-data/2026-11-26-gold-week/; query IDs,
+hashes and detailed checks are in
+[real-data-integration.md](real-data-integration.md#stage-2-evidence-november-26-2026).
+Only normal Athena result files were written in AWS; no source/IAM/LF changes,
+DynamoDB load or application deployment occurred. Stage 3 offline implementation
+is next; null/incomplete cases still require tests despite this complete sample.
+
+Real-data preparation (November 26): stage 1 is complete in
+[real-data-integration.md](real-data-integration.md), which is the persistent
+contract/checklist for the remaining stages. The current test branch started
+clean at 9883c93. Baseline passed: 119 Python tests, 20 frontend tests, lint/build,
+one mock browser smoke, pip consistency/pins, actionlint and fully offline cached
+Terraform fmt/init/validate. Only documentation changed; no AWS call, application
+implementation, dependency upgrade, plan/apply, commit or push occurred. The
+user's successful deployed mock website test is recorded as user-reported.
+The plan separates storage from provenance, preserves mock, projects nullable
+gold energy/quality and leaves absent model outputs explicitly unavailable.
+Next is a separately authorized bounded gold export; keep DEPLOY_ENABLED unset
+or false. Earlier entries below describe their own historical sessions.
+
 Chat CORS plan review (November 25): the user's saved `build/chat-cors.tfplan`
 was inspected locally without another AWS plan or apply. It contains two route
 additions, one route update and one in-place CloudFront origin configuration

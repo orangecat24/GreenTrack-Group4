@@ -3,7 +3,6 @@ import type { FormEvent } from 'react'
 import { postChat } from '../api/client'
 import type { ChatRequest, ChatResponse, WindowQuery } from '../api/types'
 import { formatTime } from '../dates'
-import { DemoBadge } from './Common'
 
 interface Exchange { question: string; response: ChatResponse }
 
@@ -55,7 +54,7 @@ export function Assistant({ window }: { window: WindowQuery | null }) {
         <p className="eyebrow">A place for questions</p>
         <h2 id="assistant-title">Assistant</h2>
       </div>
-      <DemoBadge show={exchanges.some((exchange) => exchange.response.is_demo)} />
+      <span className="badge">Assistant placeholder</span>
     </div>
 
     <div className="assistant-grid">
@@ -64,7 +63,7 @@ export function Assistant({ window }: { window: WindowQuery | null }) {
           <span className="assistant-icon" aria-hidden="true">✳</span>
           <div>
             <h3>Energy assistant preview</h3>
-            <p>This mock endpoint returns placeholders. Bedrock is not connected; no AI insights or citations are generated.</p>
+            <p>This endpoint returns placeholders. Bedrock is not connected; no AI insights or citations are generated.</p>
           </div>
         </div>
         
@@ -75,7 +74,7 @@ export function Assistant({ window }: { window: WindowQuery | null }) {
             <div className="assistant-message">
               <div>
                 <strong>Assistant · {exchange.response.status}</strong>
-                <DemoBadge show={exchange.response.is_demo} />
+                <span className="badge">Placeholder</span>
               </div>
               
               <p>{exchange.response.answer}</p>
@@ -84,7 +83,7 @@ export function Assistant({ window }: { window: WindowQuery | null }) {
             </div>
           </div>)}
 
-          {pending && <p className="notice" role="status">Waiting for the mock API…</p>}
+          {pending && <p className="notice" role="status">Waiting for the API…</p>}
         </div>
 
         {error && <div className="notice error" role="alert"><p>{error}</p><button disabled={pending} onClick={() => { if (lastRequest) void send(lastRequest) }}>Retry request</button></div>}
@@ -104,7 +103,7 @@ export function Assistant({ window }: { window: WindowQuery | null }) {
       <aside className="panel summary-panel">
         <p className="eyebrow">The bigger picture</p>
         <h3>Weekly summary</h3>
-        <p>Send your selected period to the same mock API using the weekly-summary contract.</p>
+        <p>Send your selected period to the same API using the weekly-summary contract.</p>
         <p>This is a placeholder request for the assistant integration, not a generated report.</p>
         <button disabled={pending || !window} onClick={() => { if (window) void send({ ...window, request_type: 'weekly_summary' }) }}>Request weekly summary</button>
         <small>The response will appear in the conversation.</small>

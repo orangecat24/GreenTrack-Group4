@@ -20,6 +20,7 @@ def offline_mock(monkeypatch, tmp_path):
     ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("APP_DATA_MODE", "mock")
+    monkeypatch.setenv("APP_DATA_SOURCE", "synthetic")
     # Stubber clients use explicit fake credentials. Point the SDK's optional
     # config/credential paths at nonexistent test paths so it cannot inspect a
     # developer's actual authentication files while resolving client settings.

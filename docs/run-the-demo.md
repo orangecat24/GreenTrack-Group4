@@ -1,5 +1,13 @@
 # Run GreenTrack locally and deploy the current mock app
 
+**November 26 update:** the user reports successful manual deployment and use of
+the mock website. The November 25 resource-absence and pending-check statements
+below are historical observations, not a new check of today's cloud state.
+No AWS calls were made for the current preparation stage. See
+[real-data-integration.md](real-data-integration.md) for the genuine-consumption
+design, passing offline baseline and staged authorization checklist. That
+integration is not implemented yet; the commands below still run the mock demo.
+
 Checked November 25, 2026 on clean local `main` at `5c024c7`.
 This guide is for the **existing DataMax account**, not a fresh environment.
 No Terraform plan/apply, uploads, invalidations or workflow dispatches were run
