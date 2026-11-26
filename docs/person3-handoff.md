@@ -86,7 +86,9 @@ model and fixture. For a later authorized model check, review the Claude
 model or inference profile supported by Converse and Guardrails in
 `eu-central-1`, its exact invocation resource ARNs and quotas. The
 `enable_assistant_bedrock_model` option requires explicit model inputs.
-The gold executor stays synthetic at this stage. [Dev root wiring](../infra/environments/dev/assistant.tf)
+The gold executor defaults to synthetic data. The standalone Athena opt-in has
+been exercised with a fake client. [Dev root wiring](../infra/environments/dev/assistant.tf) ·
+[P3 04 verification handoff](person3-p304-verification.md)
 
 The prospective `runtime_query_role_arn` identifies the separate Lambda
 role for P3 04. Coordinate scoped Glue and Lake Formation gold grants,
@@ -118,8 +120,8 @@ Windows Python 3.14 passed 34 assistant tests, including the HTTP API v2
 event against the source handler. The 103 existing API tests and P3 01
 fixture checker also passed. A rebuild from the local Linux wheelhouse
 passed the ZIP structure check, and the shared API builder produced the
-same package files as before. Running the extracted ZIP still requires a
-Linux x86_64 CPython 3.14 environment.
+same package files as before. The Linux x86_64 packaged invocation passed
+for the rebuilt P3 04 ZIP. [Packaged smoke test](person3-p304-verification.md#packaged-lambda-smoke-test-and-plan-review)
 
 Terraform formatting and backend-disabled dev-root validation passed.
 After the fast-forward to `5c024c7`, dev-root validation passed with the

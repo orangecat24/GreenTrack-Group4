@@ -4,6 +4,7 @@ output "handoff" {
     lambda_arn              = aws_lambda_function.assistant.arn
     lambda_invoke_arn       = aws_lambda_function.assistant.invoke_arn
     runtime_query_role_arn  = aws_iam_role.assistant.arn
+    athena_workgroup_name   = aws_athena_workgroup.assistant.name
     knowledge_base_id       = aws_bedrockagent_knowledge_base.guidance.id
     knowledge_base_arn      = aws_bedrockagent_knowledge_base.guidance.arn
     knowledge_base_role_arn = aws_iam_role.knowledge_base.arn

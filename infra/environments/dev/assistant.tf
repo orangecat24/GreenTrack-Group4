@@ -4,11 +4,27 @@ module "challenge4" {
   count  = var.enable_assistant ? 1 : 0
   source = "../../challenge4"
 
-  name_prefix          = "g4-greentrack-dev"
-  lambda_zip_path      = abspath("${path.module}/../../../build/greentrack-assistant.zip")
-  enable_bedrock_model = var.enable_assistant_bedrock_model
-  model_id             = var.assistant_model_id
-  model_resource_arns  = var.assistant_model_resource_arns
+  name_prefix           = "g4-greentrack-dev"
+  lambda_zip_path       = abspath("${path.module}/../../../build/greentrack-assistant.zip")
+  data_lake_bucket_name = module.challenge2.data_lake_bucket_name
+  gold_database_name    = module.challenge2.gold_database_name
+  enable_athena         = var.enable_assistant_athena
+  hourly_gold_prefix    = var.assistant_hourly_gold_prefix
+  enable_bedrock_model  = var.enable_assistant_bedrock_model
+  model_id              = var.assistant_model_id
+  model_resource_arns   = var.assistant_model_resource_arns
+}
+
+variable "enable_assistant_athena" {
+  description = "Opt the standalone assistant into live Athena data while keeping model mode independent."
+  type        = bool
+  default     = false
+}
+
+variable "assistant_hourly_gold_prefix" {
+  description = "Approved hourly Iceberg table root under gold/ for Athena source reads."
+  type        = string
+  default     = ""
 }
 
 variable "enable_assistant" {

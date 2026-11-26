@@ -8,6 +8,35 @@ variable "lambda_zip_path" {
   type        = string
 }
 
+variable "data_lake_bucket_name" {
+  description = "Existing dev data lake bucket containing gold objects and Athena results."
+  type        = string
+}
+
+variable "gold_database_name" {
+  description = "Gold Glue database containing the assistant's hourly table."
+  type        = string
+}
+
+variable "enable_athena" {
+  description = "Read hourly gold through Athena. Fixture mode is the default."
+  type        = bool
+  default     = false
+}
+
+variable "hourly_gold_prefix" {
+  description = "Confirmed hourly_consumption Iceberg table root in the lake bucket, including a trailing slash."
+  type        = string
+  default     = ""
+
+  validation {
+    condition = var.hourly_gold_prefix == "" || can(regex(
+      "^gold/([A-Za-z0-9_][A-Za-z0-9_.-]*/)*hourly_consumption/$", var.hourly_gold_prefix
+    ))
+    error_message = "Use the approved hourly_consumption table prefix under gold/ with a trailing slash."
+  }
+}
+
 variable "enable_bedrock_model" {
   description = "Enable Bedrock model calls after review. The default uses the scripted model."
   type        = bool

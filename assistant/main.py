@@ -9,8 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from .bedrock import Model, RequestType
 from .models import Coverage, QueryWindow, ToolInputError, utc_label
 from .service import ChatService
-from .settings import FIXTURE_PATH, HOUSEHOLDS, configured_model
-from .tools import FixtureExecutor, QueryTools
+from .settings import HOUSEHOLDS, DataSource, configured_data_source, configured_model
+from .tools import QueryTools
 
 
 class ChatRequest(BaseModel):
@@ -56,7 +56,7 @@ class Citation(BaseModel):
 class ChatProvenance(BaseModel):
     """The data source and identifier, when a read completed."""
 
-    source: Literal["synthetic_fixture", "athena"]
+    source: DataSource
     source_id: str | None
 
 
@@ -73,14 +73,16 @@ class ChatResponse(BaseModel):
     coverage: Coverage | None
     provenance: ChatProvenance
     assistant_connected: Literal[False] = False
-    is_demo: Literal[True] = True
+    is_demo: bool = True
 
 
 def create_app(*, model: Model | None = None, tools: QueryTools | None = None) -> FastAPI:
     """Build the route with replaceable adapters for offline tests."""
     app = FastAPI(title="GreenTrack Assistant")
+    source: DataSource = "synthetic_fixture"
     if tools is None:
-        tools = QueryTools(FixtureExecutor(FIXTURE_PATH), allowed_households=HOUSEHOLDS)
+        source, executor = configured_data_source()
+        tools = QueryTools(executor, allowed_households=HOUSEHOLDS)
     service = ChatService(model if model is not None else configured_model(), tools)
 
     @app.post("/chat", response_model=ChatResponse, responses={503: {"model": ChatResponse}})
@@ -96,7 +98,7 @@ def create_app(*, model: Model | None = None, tools: QueryTools | None = None) -
         if reply.status == "error":
             response.status_code = 503
         provenance = ChatProvenance(
-            **(reply.provenance or {"source": "synthetic_fixture", "source_id": None})
+            **(reply.provenance or {"source": source, "source_id": None})
         )
         citations = []
         if reply.status == "ok" and provenance.source == "synthetic_fixture":
@@ -114,6 +116,7 @@ def create_app(*, model: Model | None = None, tools: QueryTools | None = None) -
             citations=citations,
             coverage=reply.coverage,
             provenance=provenance,
+            is_demo=provenance.source == "synthetic_fixture",
         )
 
     return app

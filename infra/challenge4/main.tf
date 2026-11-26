@@ -102,7 +102,11 @@ resource "aws_lambda_function" "assistant" {
 
   environment {
     variables = merge(
-      { GREENTRACK_ASSISTANT_MODEL_MODE = var.enable_bedrock_model ? "bedrock" : "scripted" },
+      {
+        GREENTRACK_ASSISTANT_MODEL_MODE       = var.enable_bedrock_model ? "bedrock" : "scripted"
+        GREENTRACK_ASSISTANT_DATA_MODE        = var.enable_athena ? "athena" : "fixture"
+        GREENTRACK_ASSISTANT_ATHENA_WORKGROUP = aws_athena_workgroup.assistant.name
+      },
       var.enable_bedrock_model ? {
         GREENTRACK_ASSISTANT_MODEL_ID          = var.model_id
         GREENTRACK_ASSISTANT_GUARDRAIL_ID      = aws_bedrock_guardrail.assistant.guardrail_arn
@@ -118,5 +122,11 @@ resource "aws_lambda_function" "assistant" {
     }
   }
 
-  depends_on = [aws_iam_role_policy.assistant_logs, aws_iam_role_policy.assistant_model]
+  depends_on = [
+    aws_iam_role_policy.assistant_logs,
+    aws_iam_role_policy.assistant_model,
+    aws_iam_role_policy.assistant_athena,
+    aws_lakeformation_permissions.assistant_gold_database,
+    aws_lakeformation_permissions.assistant_hourly_gold,
+  ]
 }

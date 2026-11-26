@@ -102,8 +102,25 @@ resource "aws_apigatewayv2_integration" "api" {
 }
 
 resource "aws_apigatewayv2_route" "api" {
+  api_id = aws_apigatewayv2_api.api.id
+  # Match application GET requests, not every HTTP method. The former $default
+  # route forwarded chat's OPTIONS preflight to FastAPI, which returned 405.
+  # Leaving OPTIONS unmatched lets the gateway's CORS configuration answer it.
+  # The greedy path also preserves /docs and /openapi.json without listing every
+  # FastAPI GET endpoint twice. It does not match '/', hence the route below.
+  route_key = "GET /{proxy+}"
+  target    = "integrations/${aws_apigatewayv2_integration.api.id}"
+}
+
+resource "aws_apigatewayv2_route" "api_root" {
   api_id    = aws_apigatewayv2_api.api.id
-  route_key = "$default"
+  route_key = "GET /"
+  target    = "integrations/${aws_apigatewayv2_integration.api.id}"
+}
+
+resource "aws_apigatewayv2_route" "api_chat" {
+  api_id    = aws_apigatewayv2_api.api.id
+  route_key = "POST /chat"
   target    = "integrations/${aws_apigatewayv2_integration.api.id}"
 }
 
