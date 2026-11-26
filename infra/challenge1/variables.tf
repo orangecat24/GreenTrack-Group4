@@ -13,12 +13,22 @@ variable "lambda_zip_path" {
 }
 
 variable "data_mode" {
-  description = "Mock makes no application AWS calls; dynamodb explicitly enables synthetic table reads."
+  description = "Mock makes no application AWS calls; dynamodb enables reads for the selected source."
   type        = string
   default     = "mock"
   validation {
     condition     = contains(["mock", "dynamodb"], var.data_mode)
     error_message = "data_mode must be mock or dynamodb."
+  }
+}
+
+variable "data_source" {
+  description = "Consumption provenance: synthetic fixtures or an explicitly loaded gold snapshot."
+  type        = string
+  default     = "synthetic"
+  validation {
+    condition     = contains(["synthetic", "gold"], var.data_source)
+    error_message = "data_source must be synthetic or gold."
   }
 }
 

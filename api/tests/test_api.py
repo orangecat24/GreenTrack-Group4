@@ -14,7 +14,7 @@ TARGET = {**WEEK, "start": "2009-06-08T00:00:00Z", "end": "2009-06-09T00:00:00Z"
 
 def test_health_and_openapi(client):
     """All planned routes are discoverable and the health check is honestly mock."""
-    assert client.get("/health").json() == {"status": "ok", "data_mode": "mock", "is_demo": True}
+    assert client.get("/health").json() == {"status": "ok", "data_mode": "mock", "data_source": "synthetic", "is_demo": True}
     schema = client.get("/openapi.json").json()
     assert set(schema["paths"]) == {"/health", "/consumption", "/anomalies", "/forecast", "/chat"}
 

@@ -30,8 +30,9 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="GreenTrack demo API", version="0.1.0", lifespan=lifespan,
-        description=("Synthetic household-1 data, June 1-7, 2009. UTC is a demo "
-                     "convention only. Forecast/chat are illustrative or placeholders."),
+        description=("Historical household-1 consumption. Synthetic by default; gold "
+                     "requires explicit configuration and loading. UTC is a project "
+                     "clock convention, not verified source timezone. Models/chat are placeholders."),
     )
 
     @app.exception_handler(RepositoryError)
@@ -53,16 +54,16 @@ def create_app() -> FastAPI:
         return RedirectResponse(request.url_for("swagger_ui_html"), status_code=307)
 
     @app.get("/health", response_model=HealthResponse)
-    def health() -> HealthResponse:
-        """Report local mock API health without checking any external services."""
-        return HealthResponse()
+    def health(service: Annotated[EnergyService, Depends(get_service)]) -> HealthResponse:
+        """Report configuration; process health is not AWS readiness."""
+        return service.health()
 
     @app.get("/consumption", response_model=ConsumptionResponse)
     def consumption(
         query: Annotated[ConsumptionQuery, Query()],
         service: Annotated[EnergyService, Depends(get_service)],
     ) -> ConsumptionResponse:
-        """Read hourly energy or full UTC-day totals within [start, end)."""
+        """Read energy buckets within [start, end), retaining observed coverage."""
         return service.consumption(query)
 
     @app.get("/anomalies", response_model=ReadResponse[AnomalyPoint])

@@ -48,6 +48,8 @@ def daily_totals(readings: Sequence[ConsumptionPoint]) -> tuple[ConsumptionPoint
 class EnergyRepository(Protocol):
     """The small window-aware contract shared by mock and DynamoDB storage."""
 
+    data_mode: str
+    data_source: str
     forecast_origin: datetime
     forecast_target_start: datetime
     forecast_target_end: datetime
@@ -72,6 +74,8 @@ class EnergyRepository(Protocol):
 class MockRepository:
     """Build one coherent week once, then expose immutable fixture records."""
 
+    data_mode = "mock"
+    data_source = "synthetic"
     forecast_origin = FORECAST_ORIGIN
     forecast_target_start = FORECAST_ORIGIN
     forecast_target_end = FORECAST_END

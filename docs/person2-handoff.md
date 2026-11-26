@@ -1,5 +1,152 @@
 # Person 2: first mock API increment
 
+Stage 6 (November 26): explicit bounded write authorization exercised after
+source/identity/schema/fresh-preview rechecks exactly matched the stage 5 review.
+**175 consumption records written, 0 skipped, 0 failed**; no overwrite/deletion.
+Post-load Query verified 175 identical records and zero conflicts. Actual local
+gold API/browser passed with 147.3223 kWh, complete quality and honest placeholders;
+162 Python tests, 26 frontend tests and one mock browser also passed. Null/partial
+cases were tested offline, not fabricated in the complete real-data sample.
+No application defect or source-code change was found. Temporary own test servers
+were stopped. [gold-local-run.md](gold-local-run.md) contains exact PowerShell
+startup, evidence and optional documentation commit/push commands. Only the
+consumption table received the authorized inserts; deployed Lambda, other tables,
+IAM/LF and infrastructure remain unchanged. Stage 7 planning is next; keep
+DEPLOY_ENABLED unset/false. Nothing was committed or pushed by the agent.
+
+Stage 5 review (November 26): started clean at 2dacab7. Exact source/quality
+revalidation and greentrack identity/consumption-table schema checks passed.
+Read-only Query of the two household-1 grain partitions for June 1–7 found
+**175 new, 0 identical, 0 conflicting keys**. No DynamoDB writes occurred; the
+whole table was not scanned or assumed empty. The ignored preview and concise
+reviewed-load manifest are fingerprinted in [gold-load-review.md](gold-load-review.md),
+along with the exact proposed stage 6 command. Recommendation: proceed after
+stage 6 explicit authorization/rechecks. PutItem access is unverified, not
+inferred from read access. No source code/IAM/LF/resource/config changes,
+apply, seeding, commit or push occurred; the deployed mock remains unchanged.
+
+Stage 4 (November 26): frontend now handles real/synthetic provenance, null energy,
+partial/missing-minute coverage and unavailable models without invented dates.
+Existing tabs and request guards remain. Added a separate opt-in gold smoke bound
+to reviewed export hashes/totals; only collection was run, not live requests.
+Passed: 162 Python tests, 26 frontend tests, lint/build and one local mock browser
+flow. See [gold-frontend.md](gold-frontend.md) for exact prerequisites, PowerShell
+commands and suggested commit/push steps. Earlier unstaged work is preserved;
+no AWS call, deployment, commit or push occurred. Stage 5 destination preview is next.
+
+Gold backend/loader (November 26, stage 3): implemented offline; see
+[gold-loader.md](gold-loader.md) for exact PowerShell commands, file tour and
+compatibility notes. New APP_DATA_SOURCE separates provenance from storage;
+health reports the configured mode without probing AWS. Gold reads support null
+energy and quality, preserve provenance on empty responses and leave missing
+model outputs explicitly unavailable. The CLI validates both exports before any
+client, defaults to dry run, and requires a fingerprinted preview for live writes.
+Conditional inserts protect gold and synthetic seeds from overwriting each other.
+Passed: 162 Python tests, 20 frontend tests, lint/build, one mock browser smoke,
+offline Terraform fmt/init/validate and the genuine exports' 175-item dry run.
+No actual AWS calls/writes, plan/apply, dependency upgrades, commit or push.
+Stage 4 UI work remains necessary before gold can be loaded/deployed/tested as
+a complete app. The deployed mock and all earlier Markdown work are preserved.
+
+Gold export verification (November 26): stage 2 completed under explicit query
+authorization. greentrack SSO identity, gold Iceberg schemas, LF access, primary
+workgroup and scoped bucket metadata passed; exactly two bounded SELECTs
+exported 168 hourly and 7 daily records for household-1, June 1 inclusive through
+June 8 exclusive. All periods are complete, with no gaps/nulls/duplicates; hourly
+and daily totals reconcile and match the handoff's rounded figures. Genuine
+weekly consumption is **147.3223 kWh**. Queries scanned 9,029 bytes in total.
+Ignored exports/manifest are in build/real-data/2026-11-26-gold-week/; query IDs,
+hashes and detailed checks are in
+[real-data-integration.md](real-data-integration.md#stage-2-evidence-november-26-2026).
+Only normal Athena result files were written in AWS; no source/IAM/LF changes,
+DynamoDB load or application deployment occurred. Stage 3 offline implementation
+is next; null/incomplete cases still require tests despite this complete sample.
+
+Real-data preparation (November 26): stage 1 is complete in
+[real-data-integration.md](real-data-integration.md), which is the persistent
+contract/checklist for the remaining stages. The current test branch started
+clean at 9883c93. Baseline passed: 119 Python tests, 20 frontend tests, lint/build,
+one mock browser smoke, pip consistency/pins, actionlint and fully offline cached
+Terraform fmt/init/validate. Only documentation changed; no AWS call, application
+implementation, dependency upgrade, plan/apply, commit or push occurred. The
+user's successful deployed mock website test is recorded as user-reported.
+The plan separates storage from provenance, preserves mock, projects nullable
+gold energy/quality and leaves absent model outputs explicitly unavailable.
+Next is a separately authorized bounded gold export; keep DEPLOY_ENABLED unset
+or false. Earlier entries below describe their own historical sessions.
+
+Chat CORS plan review (November 25): the user's saved `build/chat-cors.tfplan`
+was inspected locally without another AWS plan or apply. It contains two route
+additions, one route update and one in-place CloudFront origin configuration
+update: **2 add / 2 change / 0 destroy**, with no replacements. The extra origin
+block preserves the same bucket and OAC and uses the documented empty legacy
+identity. All LF/IAM/data-lake resources and Lambda are unchanged; mock remains
+selected. Proceeding with this exact reviewed file is reasonable; its SHA256,
+details and manual commands are in [chat-cors-plan-review.md](chat-cors-plan-review.md).
+The complete deployed browser pass remains pending the user's apply and retest.
+
+Latest live troubleshooting (November 25, 2026): the user reports completing
+manual apply/publication. Independently verified: public health is 200 with
+mock/demo JSON, but chat OPTIONS is 405; live Gateway metadata has correct CORS
+origins and a catch-all `$default` route. The local correction uses explicit
+GET routes and POST /chat, leaving preflight to Gateway. Stage/URLs, UI, API
+schemas, data and IAM are unchanged. The deployed test now reports status/body
+on preflight failure. Terraform fmt/backend-disabled init/readonly locks/validate,
+frontend 20 tests, lint and build passed. No plan/apply/upload was run for this
+correction; the complete deployed smoke is still pending. See
+[run-the-demo.md section 8.6](run-the-demo.md#86-recover-from-chat-preflight-http-405)
+for the new-plan review gate and exact commands. Earlier status entries below
+describe their respective sessions, not the current overall deployment state.
+
+Windows deployment instruction correction (November 25): npm ci reported
+EPERM/unlink for esbuild.exe while the local frontend was still running. The
+guide now requires stopping Vite/Vitest with Ctrl+C before section 7.4, then
+rerunning npm ci in the original deployment terminal. The API may stay running;
+the deployment terminal/variables must be preserved. No process was killed,
+dependency folder deleted or AWS operation run for this documentation fix.
+
+Corrected plan review (November 25, latest): a role-scoped database-permission
+override now preserves the existing SageMaker ALL/DESCRIBE grant. Other consumers
+retain DESCRIBE-only defaults; no live permission change was applied. Terraform
+fmt/validate and a new authorized full-root mock plan passed. The reviewed file
+is build/first-app-preserved-grants.tfplan: **27 additions, 5 identical-content
+script/ruleset uploads, 0 destructions/replacements**. All existing LF grants/admins,
+Glue jobs, data-lake resources and existing roles are no-op. See
+[first-app-plan-review.md](first-app-plan-review.md) for the exact hash/review;
+the run guide selects/checks the new file before applying. The old first-app.tfplan
+remains rejected. No apply, commits or pushes were performed.
+
+First saved-plan review (November 25): **HOLD; do not apply as-is.** See
+[first-app-plan-review.md](first-app-plan-review.md). The plan proposes 27 new app
+resources, five identical-content script/ruleset uploads and replacement of an
+existing SageMaker database grant that removes ALL permission. LF admins and
+the separate gold-table read grant are unchanged. No plan/apply, permission or
+state change was made by the review; a scoped configuration correction and a
+fresh plan are needed before deployment.
+
+Instruction clarification (November 25): run-the-demo.md sections 6-8 now use
+numbered steps with one command per PowerShell box, explicit Enter/wait/browser
+instructions, expected output, error stopping points and a separate plan-review
+gate before apply. All deployment command boxes were syntax-checked without
+execution; no login, plan, apply, upload or cloud test was run for this edit.
+
+Latest startup/deployment guidance: [run-the-demo.md](run-the-demo.md), verified
+November 25 against main `5c024c7`. App resources were absent in AWS metadata
+checks. Local mock mode and its tests pass; completed gold preprocessing is not
+yet connected through a gold-to-DynamoDB loader. ML/assistant remain placeholders.
+The shared dev root's identity-dependent Lake Formation admin list needs review
+before enabling GitHub auto-apply. No Terraform/IAM/runtime code was changed.
+
+Windows verification fix (November 25): user-provided output showed all 119
+Python tests failing during tmp_path setup because the shared Windows pytest
+temporary directory was inaccessible. A fresh GUID-named --basetemp under
+ignored .qa passes all 119 tests without global TEMP/ACL changes. The guide now
+uses that command. Separately, an accidental web/.venv made ESLint inspect pip's
+vendored JavaScript. ESLint now excludes Python virtual environments; lint
+passes with that folder left intact. No environment was deleted. The user's
+frontend tests (20), build and browser smoke had already passed; no additional
+AWS calls, deployment, commits or pushes occurred for this correction.
+
 Decision for our 7–10 day delivery: start with a small FastAPI service and an
 explicit provisional contract. A React/TypeScript/Vite SPA now consumes it in `web/`.
 An opt-in DynamoDB demo adapter and Terraform application module are implemented

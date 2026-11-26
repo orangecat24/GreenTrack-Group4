@@ -9,6 +9,7 @@ locals {
   # config to SSM does NOT require fetching it with boto3 during mock startup.
   api_configuration = {
     APP_DATA_MODE              = var.data_mode
+    APP_DATA_SOURCE            = var.data_source
     DYNAMODB_REGION            = data.aws_region.current.region
     DYNAMODB_CONSUMPTION_TABLE = aws_dynamodb_table.demo["consumption"].name
     DYNAMODB_ANOMALIES_TABLE   = aws_dynamodb_table.demo["anomalies"].name

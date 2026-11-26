@@ -53,7 +53,7 @@ export default function App() {
       <div className="filter-bar">
         <DateFields label="Historical period (UTC)" value={dates} onChange={setDates} />
 
-        <p>Demo history: June 1-7, 2009.<br /><span>UTC is a demo convention only.</span></p>
+        <p>Historical selection<br /><span>UTC is the project clock convention.</span></p>
       </div>
 
       {!window && <div role="alert" className="notice error">Choose valid historical dates with From on or before Through.</div>}
@@ -76,7 +76,7 @@ export default function App() {
 
       <footer>
         <strong>GreenTrack</strong>
-        <p>Synthetic energy demo · Historical dates, illustrative forecast, placeholder assistant.</p>
+        <p>Historical energy · Source and integration status are shown in each view.</p>
         <span>Built to make patterns visible.</span>
       </footer>
       

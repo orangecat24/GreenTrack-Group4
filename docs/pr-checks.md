@@ -144,6 +144,11 @@ configure branch protection separately; this task does not change repository set
 
 ## Verification limits
 
+For Windows pytest temp-folder access errors, use the fresh workspace-local
+basetemp command in [run-the-demo.md](run-the-demo.md#4-local-verification-another-terminal-repository-root).
+The ESLint configuration excludes `.venv`/`venv` folders, including an accidental
+Python environment inside web/, without deleting those environments.
+
 Local application and Terraform results are recorded in the task handoff.
 See [application-infrastructure.md](application-infrastructure.md) for Lambda
 packaging, resource/configuration details and later-only deployment commands.

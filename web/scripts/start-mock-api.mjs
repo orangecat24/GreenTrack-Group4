@@ -14,7 +14,7 @@ if (!existsSync(python)) {
 // Do not pass AWS settings from a developer/CI shell into the demo process.
 // Values are neither read for application use nor printed. The mock repository
 // has no cloud clients; pytest separately blocks application network connections.
-const env = { ...process.env, APP_DATA_MODE: 'mock' }
+const env = { ...process.env, APP_DATA_MODE: 'mock', APP_DATA_SOURCE: 'synthetic' }
 for (const name of Object.keys(env)) {
   if (name.startsWith('AWS_')) delete env[name]
 }

@@ -4,13 +4,13 @@ import type { AnomalyPoint, ChatResponse, ConsumptionPoint, ConsumptionResponse,
 // deliberately do not duplicate the backend's 168-point fixture or its totals.
 export const reading: ConsumptionPoint = {
   household_id: 'household-1', timestamp: '2009-06-01T00:00:00Z',
-  interval_end: '2009-06-02T00:00:00Z', energy_kwh: 12.34,
+  interval_end: '2009-06-02T00:00:00Z', energy_kwh: 12.34, minutes_with_data: null, is_complete: null,
 }
 export const consumption: ConsumptionResponse = {
   household_id: 'household-1', items: [reading], units: { energy_kwh: 'kWh' },
   requested_start: '2009-06-01T00:00:00Z', requested_end: '2009-06-08T00:00:00Z',
   covered_start: reading.timestamp, covered_end: reading.interval_end,
-  next_cursor: null, is_demo: true, grain: 'daily',
+  next_cursor: null, is_demo: true, grain: 'daily', data_source: 'synthetic', status: 'available', note: null,
   timezone_note: 'UTC is a demo convention only; the source dataset timezone is unconfirmed.',
 }
 export const anomalies: ReadResponse<AnomalyPoint> = {

@@ -23,7 +23,7 @@ export function RequestState({ loading, error, empty, retry }: {
 }) {
   if (loading) return <div className="notice" role="status"><span className="spinner" /> Loading API data…</div>
   if (error) return <div className="notice error" role="alert"><div><strong>We couldn’t load this view.</strong><p>{error}</p></div><button onClick={retry}>Try again</button></div>
-  if (empty) return <div className="notice" role="status">No records in this window. Try June 1–7, 2009 for history or June 8 for forecast targets.</div>
+  if (empty) return <div className="notice" role="status">No records in this window. Choose another historical period.</div>
   return null
 }
 
@@ -33,4 +33,16 @@ export function Coverage({ data }: { data: ReadResponse<unknown> }) {
     <p><strong>Covered:</strong> {data.covered_start && data.covered_end ? `${formatTime(data.covered_start)} → ${formatTime(data.covered_end)} UTC` : 'No returned buckets'}</p>
     <p>{data.timezone_note}</p>
   </div>
+}
+
+/** Provenance belongs to each response, including empty results, not the AWS host. */
+export function Provenance({ data }: { data: ReadResponse<unknown> | null }) {
+  if (!data) return null
+  if (data.status === 'unavailable') return <span className="badge">Not integrated</span>
+  if (data.data_source === 'gold') return <span className="badge">Historical source data</span>
+  return <DemoBadge show={data.is_demo} />
+}
+
+export function Unavailable({ data }: { data: ReadResponse<unknown> }) {
+  return <p className="notice" role="status">{data.note || 'This feature is not integrated.'}</p>
 }

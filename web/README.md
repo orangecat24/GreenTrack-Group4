@@ -1,5 +1,9 @@
 # GreenTrack SPA
 
+Gold-consumption source/quality UI support and the separate opt-in gold smoke
+are documented in [gold-frontend.md](../docs/gold-frontend.md). Mock remains the
+ordinary local/CI default; real AWS loading/deployment is a later explicit gate.
+
 React + TypeScript + Vite, plain CSS, and Recharts. Requires **Node 24**.
 All consumption, anomaly, forecast, and assistant responses come from FastAPI;
 the browser contains no copy of its fixture arrays. Small synthetic objects in
