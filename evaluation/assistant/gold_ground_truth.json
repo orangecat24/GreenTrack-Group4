@@ -1,0 +1,21 @@
+{
+  "evidence_status": "teammate_reported_baseline_pending_live_verification",
+  "reported_on": "2026-11-19",
+  "reported_workflow_run": "wr_b38a9cb412c00d3720d0ecf9b6b47761b138b9a217fdad07661e2fe2b79b5721",
+  "request": {
+    "household_id": "household-1",
+    "start": "2009-06-01T00:00:00Z",
+    "end": "2009-06-02T00:00:00Z",
+    "request_type": "chat",
+    "message": "How much energy did we use on June 1, 2009?"
+  },
+  "reported_daily_kwh_rounded_to_3dp": 24.054,
+  "expected_hourly_coverage_from_reported_complete_day": {
+    "expected_minutes": 1440,
+    "measured_minutes": 1440,
+    "complete_hours": 24,
+    "partial_hours": 0,
+    "all_null_hours": 0,
+    "absent_hours": 0
+  }
+}

@@ -3,10 +3,7 @@
 GreenTrack student demo: FastAPI, React/TypeScript/Vite and Terraform.
 
 - [Person 2 handoff and local API commands](docs/person2-handoff.md)
-- [Run the current demo locally and deploy/test it safely](docs/run-the-demo.md)
-- [Real gold-consumption integration plan, checklist and offline baseline](docs/real-data-integration.md)
-- [Gold backend and safe loader commands (offline stage 3)](docs/gold-loader.md)
-- [Gold frontend, offline tests and opt-in browser smoke (stage 4)](docs/gold-frontend.md)
+
 - [Frontend startup and tests](web/README.md)
 - [Existing AWS foundation and teammate handoff](docs/foundation-handoff.md)
 - [Application infrastructure, packaging and later deployment](docs/application-infrastructure.md)

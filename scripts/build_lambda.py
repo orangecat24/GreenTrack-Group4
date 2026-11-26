@@ -17,8 +17,8 @@ BUILD = ROOT / "build"
 ARTIFACT = BUILD / "greentrack-api.zip"
 
 
-def package_files(wheels: Path) -> dict[str, bytes]:
-    """Unpack runtime wheels and source; reject unsafe paths or host binaries."""
+def wheel_files(wheels: Path) -> dict[str, bytes]:
+    """Unpack pinned wheels, rejecting unsafe paths and non-Linux binaries."""
     files: dict[str, bytes] = {}
     for wheel in sorted(wheels.glob("*.whl")):
         with zipfile.ZipFile(wheel) as archive:
@@ -47,14 +47,32 @@ def package_files(wheels: Path) -> dict[str, bytes]:
                 if name in files:
                     raise ValueError(f"Overlapping wheel files: {name}")
                 files[name] = content
+    if not any(name.startswith("pydantic_core/") and name.endswith(".so") for name in files):
+        raise ValueError("The Linux pydantic-core extension is missing.")
+    return files
+
+
+def package_files(wheels: Path) -> dict[str, bytes]:
+    """Combine the existing API package with its runtime wheels."""
+    files = wheel_files(wheels)
     # Copy only application Python source. No seed loader, .env, tests or caches.
     for source in sorted((ROOT / "api/app").rglob("*.py")):
         # Git may use CRLF in a Windows checkout and LF in CI. Normalize source
         # newlines so that the ZIP hash does not depend on that checkout setting.
         files[source.relative_to(ROOT / "api").as_posix()] = source.read_text(encoding="utf-8").encode("utf-8")
-    if not any(name.startswith("pydantic_core/") and name.endswith(".so") for name in files):
-        raise ValueError("The Linux pydantic-core extension is missing.")
     return files
+
+
+def write_archive(artifact: Path, files: dict[str, bytes]) -> None:
+    """Write a deterministic ZIP of installed files."""
+    with zipfile.ZipFile(artifact, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+        for name, content in sorted(files.items()):
+            # Fixed timestamps, permissions and order remove host differences.
+            info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+            info.create_system = 3
+            info.external_attr = 0o100644 << 16
+            info.compress_type = zipfile.ZIP_DEFLATED
+            archive.writestr(info, content, compresslevel=9)
 
 
 def main() -> None:
@@ -75,14 +93,7 @@ def main() -> None:
             "--dest", str(wheels), "-r", str(ROOT / "api/requirements.txt"),
         ], cwd=ROOT, check=True)
         files = package_files(wheels)
-        with zipfile.ZipFile(ARTIFACT, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-            for name, content in sorted(files.items()):
-                # Fixed timestamps, permissions and order remove host differences.
-                info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
-                info.create_system = 3
-                info.external_attr = 0o100644 << 16
-                info.compress_type = zipfile.ZIP_DEFLATED
-                archive.writestr(info, content, compresslevel=9)
+        write_archive(ARTIFACT, files)
     print(f"Built {ARTIFACT.relative_to(ROOT)} ({ARTIFACT.stat().st_size:,} bytes)")
     print(f"SHA256 {hashlib.sha256(ARTIFACT.read_bytes()).hexdigest()}")
 
